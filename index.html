@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>⚡ Super Clicker</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background: #f0f8ff; }
+        button { font-size: 24px; padding: 15px 30px; margin: 15px; cursor: pointer; transition: transform 0.1s; }
+        button:active { transform: scale(1.2); }
+        #score, #power, #best { font-size: 28px; margin: 10px; }
+        #event { font-size: 22px; color: orange; margin: 10px; height: 30px; }
+        .floatText {
+            position: absolute;
+            font-size: 24px;
+            color: gold;
+            font-weight: bold;
+            animation: floatUp 1s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-60px); }
+        }
+    </style>
+</head>
+<body>
+    <h1>⚡ Super Clicker</h1>
+    <div id="score">Punkte: 0</div>
+    <div id="power">Klick-Power: 1</div>
+    <div id="best">Bestes Ergebnis: 0</div>
+    <div id="event"></div>
+    <button id="clickBtn">🔥 Klick mich!</button>
+    <button id="upgradeBtn">⚡ Upgrade (+1 Power, 10 Punkte)</button>
+
+    <script>
+        let score = Number(localStorage.getItem("score")) || 0;
+        let power = Number(localStorage.getItem("power")) || 1;
+        let best = Number(localStorage.getItem("best")) || 0;
+
+        const scoreDiv = document.getElementById('score');
+        const powerDiv = document.getElementById('power');
+        const bestDiv = document.getElementById('best');
+        const clickBtn = document.getElementById('clickBtn');
+        const upgradeBtn = document.getElementById('upgradeBtn');
+
+        function updateDisplay() {
+            scoreDiv.textContent = "Punkte: " + score;
+            powerDiv.textContent = "Klick-Power: " + power;
+            best = Math.max(best, score);
+            bestDiv.textContent = "Bestes Ergebnis: " + best;
+            localStorage.setItem("score", score);
+            localStorage.setItem("power", power);
+            localStorage.setItem("best", best);
+        }
+
+        function showFloat(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.className = 'floatText';
+            div.style.left = (window.innerWidth/2 - 50 + (Math.random()*100 - 50)) + 'px';
+            div.style.top = '200px';
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 1000);
+        }
+
+        function bonusEvent() {
+            if (Math.random() < 0.1) {
+                let bonus = Math.floor(Math.random() * 10) + 5;
+                score += bonus;
+                showFloat("🌟 Bonus +" + bonus + "!");
+            }
+        }
+
+        clickBtn.addEventListener('click', () => {
+            let gain = power;
+            if (Math.random() < 0.2) { gain *= 2; showFloat("⚡ Doppelpunkte +" + gain + "!"); }
+            else showFloat("+" + gain);
+            score += gain;
+            bonusEvent();
+            updateDisplay();
+        });
+
+        upgradeBtn.addEventListener('click', () => {
+            if (score >= 10) {
+                score -= 10;
+                power += 1;
+                showFloat("⚡ Power +1!");
+                updateDisplay();
+            } else alert("Nicht genug Punkte!");
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
