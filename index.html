@@ -38,18 +38,17 @@
     justify-content: center; 
     font-size: 72px; 
     cursor: pointer; 
-    transition: all 0.3s; 
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
     position: relative;
     color: white;
     font-weight: bold;
     border-radius: 12px;
   }
 
-  /* Leuchteffekt beim Tippen */
-  .cell:active {
-    box-shadow: 0 0 20px 5px white;
+  /* Sanfter Glow beim Tippen */
+  .cell.active {
+    box-shadow: 0 0 25px 10px rgba(255,255,255,0.8);
     transform: scale(1.05);
-    filter: brightness(1.5);
   }
 
   #message { margin-top: 20px; font-size: 24px; color: #ffffff; }
@@ -116,7 +115,6 @@ function showTip(index) { tipDiv.textContent = tips[index]; }
 function randomTip() { showTip(Math.floor(Math.random() * tips.length)); }
 setInterval(randomTip, 4000); randomTip();
 
-// Helle, kräftige Farben für Zellen
 function randomColor() {
     const colors = ["#ff8a80","#ff80ab","#ea80fc","#b388ff","#8c9eff","#80d8ff","#84ffff","#a7ffeb","#b9f6ca","#ccff90","#f4ff81","#ffff8d","#ffe57f","#ffd180","#ff9e80"];
     return colors[Math.floor(Math.random()*colors.length)];
@@ -129,11 +127,20 @@ function renderBoard() {
         div.className='cell';
         div.textContent=cell;
         if(cell==='') div.style.backgroundColor = randomColor();
+
+        // Glow beim Tippen
+        div.addEventListener('mousedown',()=>activateGlow(div));
+        div.addEventListener('touchstart',()=>activateGlow(div));
+
         div.addEventListener('click',()=>playerMove(index));
         div.addEventListener('mouseenter',()=>showTip(index%tips.length));
-        div.addEventListener('touchstart',()=>showTip(index%tips.length));
         boardDiv.appendChild(div);
     });
+}
+
+function activateGlow(div){
+    div.classList.add('active');
+    setTimeout(()=>div.classList.remove('active'), 250); // Glow verblasst sanft
 }
 
 function checkWinner(player){
@@ -154,7 +161,7 @@ function playerMove(index){
 
     board[index]='X'; 
     soundClick.play(); 
-    renderBoard(); // Spielerzug sofort sichtbar
+    renderBoard();
 
     if(checkWinner('X')){
         gameOver=true; 
@@ -173,7 +180,6 @@ function playerMove(index){
         return; 
     }
 
-    // AI-Zug nach kurzem Delay, damit Spielerzug sichtbar bleibt
     setTimeout(() => aiMove(), 200);
 }
 
