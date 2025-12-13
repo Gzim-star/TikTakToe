@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Tic-Tac-Toe Player vs AI</title>
+<title>Tic-Tac-Toe vs AI</title>
 <style>
   html, body {
     height: 100%;
@@ -10,179 +10,114 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    background: #000; /* schwarzer Hintergrund */
     font-family: Arial, sans-serif;
-    background: #000000; /* Schwarzer Hintergrund */
-    overflow: hidden;
   }
 
-  #gameContainer {
-    text-align: center;
-    z-index: 1;
-  }
-
-  h1 { color: #ffffff; margin-bottom: 20px; }
-  
-  #board { 
-    display: grid; 
-    grid-template-columns: repeat(3, 150px); 
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 150px);
     grid-template-rows: repeat(3, 150px);
-    gap: 10px; 
-    margin: 0 auto; 
+    gap: 10px;
   }
 
-  .cell { 
-    width: 150px; 
-    height: 150px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-size: 72px; 
-    cursor: pointer; 
-    transition: all 0.3s; 
-    position: relative;
-    color: white;
+  .cell {
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 72px;
     font-weight: bold;
     border-radius: 12px;
-    border: none; /* Kein sichtbarer Rand */
-    box-shadow: 0 0 15px rgba(255,255,255,0.2); /* nur sanfter Glow */
+    transition: box-shadow 0.2s, transform 0.2s;
   }
 
-  .cell:hover { 
-    transform: scale(1.05); 
-    filter: brightness(1.2); 
-    box-shadow: 0 0 25px rgba(255,255,255,0.5); /* stärkerer Glow beim Hover */
+  /* Glow nur beim Tippen/Klicken */
+  .cell:active {
+    box-shadow: 0 0 20px 5px rgba(255,255,255,0.7);
+    transform: scale(1.05);
   }
 
-  .highlight { 
-    background: #ffe082 !important; 
-    color: #000 !important; 
-    box-shadow: 0 0 30px #ffe082 !important; /* Glow bei Gewinn */
-  }
-
-  #message { margin-top: 20px; font-size: 24px; color: #ffffff; }
-  #scoreboard { margin-top: 15px; font-size: 20px; color: #ffffff; }
-  #level { margin-top: 15px; font-size: 18px; color: #ffffff; }
-  button { padding: 12px 25px; margin-top: 20px; font-size: 18px; cursor: pointer; background: #2e7d32; color: white; border: none; border-radius: 6px; }
-
-  #tip { margin-top: 10px; font-size: 16px; color: #ffffff; min-height: 20px; }
-
-  @media (max-width: 600px) {
-    #board { grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); }
-    .cell { width: 100px; height: 100px; font-size: 48px; }
+  #message {
+    color: #fff;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 24px;
   }
 </style>
 </head>
 <body>
 
-<div id="gameContainer">
-  <h1>Tic-Tac-Toe 🌈</h1>
+<div>
   <div id="board"></div>
-  <div id="tip"></div>
   <div id="message"></div>
-  <div id="scoreboard">Player: 0 | AI: 0 | Draws: 0</div>
-  <div id="level">
-    Level: 
-    <select id="levelSelect">
-      <option value="easy">Easy</option>
-      <option value="medium" selected>Medium</option>
-      <option value="hard">Hard</option>
-    </select>
-  </div>
-  <button onclick="resetGame()">Restart Game</button>
 </div>
 
-<audio id="soundClick" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
-<audio id="soundWin" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
-
 <script>
-let board = ['', '', '', '', '', '', '', '', ''];
-let gameOver = false;
-let scores = { player: 0, ai: 0, draw: 0 };
 const boardDiv = document.getElementById('board');
 const messageDiv = document.getElementById('message');
-const scoreboardDiv = document.getElementById('scoreboard');
-const tipDiv = document.getElementById('tip');
-const soundClick = document.getElementById('soundClick');
-const soundWin = document.getElementById('soundWin');
-const levelSelect = document.getElementById('levelSelect');
+let board = ['', '', '', '', '', '', '', '', ''];
+let gameOver = false;
 
-const tips = [
-  "Every step counts 🌱",
-  "Wind energy is clean! 💨",
-  "Save energy, save the planet 🌍",
-  "Hydropower is a renewable source 💧",
-  "Choose green energy 🌞",
-  "Small changes = big impact ♻️",
-  "Solar panels power homes sustainably ☀️",
-  "Recycling reduces waste 🗑️",
-  "Plant trees to save forests 🌳",
-  "Energy efficiency is key ⚡"
-];
-
-function showTip(index) { tipDiv.textContent = tips[index]; }
-function randomTip() { showTip(Math.floor(Math.random() * tips.length)); }
-setInterval(randomTip, 4000); randomTip();
-
+// zufällige Farben für Zellen
 function randomColor() {
-    const colors = ["#e57373","#f06292","#ba68c8","#9575cd","#7986cb","#64b5f6","#4dd0e1","#4db6ac","#81c784","#aed581","#dce775","#fff176","#ffd54f","#ffb74d","#ff8a65"];
-    return colors[Math.floor(Math.random()*colors.length)];
+  const colors = ["#e57373","#f06292","#ba68c8","#9575cd","#7986cb","#64b5f6","#4dd0e1","#4db6ac","#81c784","#aed581","#dce775","#fff176","#ffd54f","#ff8a65"];
+  return colors[Math.floor(Math.random() * colors.length)];
 }
 
-function renderBoard() {
-    boardDiv.innerHTML = '';
-    board.forEach((cell,index)=>{
-        const div=document.createElement('div');
-        div.className='cell';
-        div.textContent=cell;
-        if(cell==='') div.style.backgroundColor = randomColor();
-        div.addEventListener('click',()=>playerMove(index));
-        div.addEventListener('mouseenter',()=>showTip(index%tips.length));
-        div.addEventListener('touchstart',()=>showTip(index%tips.length));
-        boardDiv.appendChild(div);
-    });
-}
-
+// prüfen ob Spieler gewonnen hat
 function checkWinner(player){
-    const winPatterns=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for(const pattern of winPatterns){
-        if(pattern.every(i=>board[i]===player)){
-            highlightCells(pattern); return true;
+  const winPatterns=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(const pattern of winPatterns){
+    if(pattern.every(i => board[i] === player)) return true;
+  }
+  return false;
+}
+
+// AI wählt zufälligen freien Zug
+function aiMove() {
+  if(gameOver) return;
+  let empty = board.map((v,i)=>v===''?i:null).filter(v=>v!==null);
+  if(empty.length === 0) return;
+  let move = empty[Math.floor(Math.random()*empty.length)];
+  board[move] = 'O';
+  renderBoard();
+  if(checkWinner('O')){
+    gameOver = true;
+    messageDiv.textContent = "AI wins! 🤖🎉";
+  } else if(board.every(c=>c!=='')){
+    gameOver = true;
+    messageDiv.textContent = "It's a draw! 🤝";
+  }
+}
+
+// rendern der Zellen
+function renderBoard() {
+  boardDiv.innerHTML = '';
+  board.forEach((cell, index) => {
+    const div = document.createElement('div');
+    div.className = 'cell';
+    div.textContent = cell;
+    if(cell === '') div.style.backgroundColor = randomColor();
+    div.addEventListener('click', () => {
+      if(board[index] === '' && !gameOver){
+        board[index] = 'X';
+        renderBoard();
+        if(checkWinner('X')){
+          gameOver = true;
+          messageDiv.textContent = "You win! 🎉";
+        } else if(board.every(c=>c!=='')){
+          gameOver = true;
+          messageDiv.textContent = "It's a draw! 🤝";
+        } else {
+          setTimeout(aiMove, 300);
         }
-    }
-    return false;
+      }
+    });
+    boardDiv.appendChild(div);
+  });
 }
-
-function highlightCells(pattern){ pattern.forEach(i=>boardDiv.children[i].classList.add('highlight')); }
-
-function playerMove(index){
-    if(board[index]!==' '&&board[index]!=='') return;
-    if(gameOver) return;
-    board[index]='X'; soundClick.play(); renderBoard();
-    if(checkWinner('X')){ gameOver=true; scores.player++; messageDiv.textContent="You win! 🎉"; updateScore(); soundWin.play(); return; }
-    if(board.every(c=>c!=='')){ gameOver=true; scores.draw++; messageDiv.textContent="It's a draw! 🤝"; updateScore(); return; }
-    setTimeout(aiMove,400);
-}
-
-function aiMove(){
-    if(gameOver) return;
-    const level = levelSelect.value;
-    let moveIndex;
-    if(level==='easy') moveIndex=randomMove();
-    else if(level==='medium') moveIndex=mediumMove();
-    else moveIndex=bestMove();
-    board[moveIndex]='O';
-    renderBoard();
-    if(checkWinner('O')){ gameOver=true; scores.ai++; messageDiv.textContent="AI wins! 🤖🎉"; updateScore(); soundWin.play(); return; }
-    if(board.every(c=>c!=='')){ gameOver=true; scores.draw++; messageDiv.textContent="It's a draw! 🤝"; updateScore(); return; }
-}
-
-function randomMove(){ let empty=board.map((v,i)=>v===''?i:null).filter(v=>v!==null); return empty[Math.floor(Math.random()*empty.length)]; }
-function mediumMove(){ for(let i=0;i<9;i++){ if(board[i]===''){ board[i]='O'; if(checkWinner('O')) return i; board[i]=''; } } for(let i=0;i<9;i++){ if(board[i]===''){ board[i]='X'; if(checkWinner('X')){ board[i]='O'; return i; } board[i]=''; } } return randomMove(); }
-function bestMove(){ let best=-Infinity, move; for(let i=0;i<9;i++){ if(board[i]===''){ board[i]='O'; let score=minimax(board,0,false); board[i]=''; if(score>best){best=score; move=i;} } } return move; }
-function minimax(b,d,isMax){ if(checkWinner('O')) return 10-d; if(checkWinner('X')) return d-10; if(b.every(c=>c!=='')) return 0; if(isMax){ let best=-Infinity; for(let i=0;i<9;i++){ if(b[i]===''){ b[i]='O'; let score=minimax(b,d+1,false); b[i]=''; best=Math.max(score,best); } } return best; } else{ let best=Infinity; for(let i=0;i<9;i++){ if(b[i]==='X'){ b[i]='X'; let score=minimax(b,d+1,true); b[i]=''; best=Math.min(score,best); } } return best; } }
-
-function resetGame(){ board=['','','','','','','','','']; gameOver=false; messageDiv.textContent=''; renderBoard(); }
-function updateScore(){ scoreboardDiv.textContent=`Player: ${scores.player} | AI: ${scores.ai} | Draws: ${scores.draw}`; }
 
 renderBoard();
 </script>
