@@ -112,8 +112,9 @@ function showTip(index) { tipDiv.textContent = tips[index]; }
 function randomTip() { showTip(Math.floor(Math.random() * tips.length)); }
 setInterval(randomTip, 4000); randomTip();
 
+// Helle, kräftige Farben für Zellen
 function randomColor() {
-    const colors = ["#e57373","#f06292","#ba68c8","#9575cd","#7986cb","#64b5f6","#4dd0e1","#4db6ac","#81c784","#aed581","#dce775","#fff176","#ffd54f","#ffb74d","#ff8a65"];
+    const colors = ["#ff8a80","#ff80ab","#ea80fc","#b388ff","#8c9eff","#80d8ff","#84ffff","#a7ffeb","#b9f6ca","#ccff90","#f4ff81","#ffff8d","#ffe57f","#ffd180","#ff9e80"];
     return colors[Math.floor(Math.random()*colors.length)];
 }
 
