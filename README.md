@@ -1,2 +1,2 @@
-# Sonneclicker
-clicker 
+TikTakToe
+Player vs AI
