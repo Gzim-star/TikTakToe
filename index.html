@@ -48,24 +48,13 @@ html, body {
   font-size: 22px;
 }
 
-/* 🎯 TIMER STATES */
 .timer-green { color: #4caf50; }
 .timer-yellow { color: #ffeb3b; }
-.timer-red {
-  color: #f44336;
-  animation: pulse 1s infinite;
-}
+.timer-red { color: #f44336; animation: pulse 1s infinite; }
 
-@keyframes pulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-#message, #scoreboard, #level {
-  margin-top: 10px;
-  color: white;
-}
+#message, #scoreboard, #level { margin-top: 10px; color: white; }
 
 button {
   padding: 12px 25px;
@@ -78,21 +67,13 @@ button {
 }
 
 @media (max-width: 600px) {
-  #board {
-    grid-template-columns: repeat(3, 100px);
-    grid-template-rows: repeat(3, 100px);
-  }
-  .cell {
-    width: 100px;
-    height: 100px;
-    font-size: 48px;
-  }
+  #board { grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); }
+  .cell { width: 100px; height: 100px; font-size: 48px; }
 }
 </style>
 </head>
 
 <body>
-
 <div id="gameContainer">
   <div id="board"></div>
   <div id="timer">⏳ Time left: 6</div>
@@ -115,6 +96,11 @@ button {
 <audio id="soundWin" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
 
 <script>
+// 🔒 Tic-Tac-Toe Original by Gëzim Hasani
+const gameID = "2025-GH-TTT01"; // eindeutige ID für dein Spiel
+const gameVersion = "1.0.0";
+const creationDate = "2025-12-14";
+
 let board = ['', '', '', '', '', '', '', '', ''];
 let gameOver = false;
 let scores = { player: 0, ai: 0, draw: 0 };
@@ -209,7 +195,6 @@ function playerMove(index) {
   setTimeout(aiMove, 400);
 }
 
-/* 🧠 AI MOVE */
 function aiMove() {
   if (gameOver) return;
 
@@ -246,7 +231,6 @@ function randomMove() {
   return empty[Math.floor(Math.random()*empty.length)];
 }
 
-/* 🧠 SMART MEDIUM AI */
 function mediumMove() {
   for (let i=0;i<9;i++) {
     if (board[i]==='') {
@@ -268,7 +252,6 @@ function mediumMove() {
   return randomMove();
 }
 
-/* 🔥 HARD AI = MINIMAX 🔥 */
 function hardMove() {
   let bestScore = -Infinity;
   let move;
