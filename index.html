@@ -123,12 +123,12 @@ function checkClick(div) {
     currentIndex++;
     message.textContent = "";
     if (currentIndex === hiddenWord.length) {
-      message.textContent = "✅ Richtig! Nächstes Wort…";
+      message.textContent = "";
       setTimeout(generateGrid, 1000);
     }
   } else {
     div.classList.add("wrong");
-    message.textContent = `❌ Falsch! Das ist nicht der Buchstabe für Position ${currentIndex + 1}.`;
+    message.textContent = ``;
     setTimeout(() => div.classList.remove("wrong"), 800);
   }
 }
