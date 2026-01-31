@@ -129,25 +129,42 @@ function placeWord(word, gridData) {
   let placed = false;
 
   while (!placed) {
-    const mode = Math.floor(Math.random() * 3);
-    const maxRow = mode === 0 ? 12 : 12 - len;
-    const maxCol = mode === 1 ? 12 : 12 - len;
+    // 0 = horizontal ➡️ | 1 = vertikal ⬇️ | 2 = diagonal ↘️ | 3 = diagonal ↗️
+    let mode = Math.floor(Math.random() * 4); // jetzt 0-3 statt 0-2
+
+    const maxRow = (mode === 0 || mode === 3) ? 12 : 12 - len;
+    const maxCol = (mode === 1 || mode === 2 || mode === 3) ? 12 - len : 12;
 
     const sr = Math.floor(Math.random() * maxRow);
     const sc = Math.floor(Math.random() * maxCol);
 
     let fits = true;
     for (let i = 0; i < len; i++) {
-      const r = sr + (mode === 1 || mode === 2 ? i : 0);
-      const c = sc + (mode === 0 || mode === 2 ? i : 0);
-      if (gridData[r][c]) { fits = false; break; }
+      let r = sr + (mode === 1 || mode === 2 ? i : 0);
+      let c = sc + (mode === 0 || mode === 2 ? i : 0);
+
+      if (mode === 3) { // ↗️
+        r = sr - i;
+        c = sc + i;
+      }
+
+      if (r < 0 || r >= 12 || c < 0 || c >= 12 || gridData[r][c]) {
+        fits = false;
+        break;
+      }
     }
 
     if (!fits) continue;
 
     for (let i = 0; i < len; i++) {
-      const r = sr + (mode === 1 || mode === 2 ? i : 0);
-      const c = sc + (mode === 0 || mode === 2 ? i : 0);
+      let r = sr + (mode === 1 || mode === 2 ? i : 0);
+      let c = sc + (mode === 0 || mode === 2 ? i : 0);
+
+      if (mode === 3) { // ↗️
+        r = sr - i;
+        c = sc + i;
+      }
+
       gridData[r][c] = {
         letter: word[i],
         order: globalOrder++
