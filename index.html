@@ -2,109 +2,150 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Find the Ball</title>
+<title>Find the Ball – Level 2</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
   margin: 0;
-  height: 100vh;
   background: black;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   overflow: hidden;
+  font-family: Arial, sans-serif;
 }
 
-/* Spielfeld */
+/* SPIELFLÄCHE */
 #field {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  inset: 0;
 }
 
-/* Ball */
-#ball {
+/* BALL */
+.ball {
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: white;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.2s;
 }
 
-/* Text */
-#hint {
+/* FAKE */
+.fake {
+  opacity: 0.15;
+}
+
+/* SCHREIB-LAYER */
+#writeLayer {
   position: fixed;
-  bottom: 30px;
-  width: 100%;
-  text-align: center;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 50;
+}
+
+#wordFlash {
   color: white;
+  font-size: 28px;
+  letter-spacing: 6px;
+}
+
+#drawCanvas {
+  background: white;
+  border-radius: 6px;
+  touch-action: none;
+}
+
+#doneBtn {
+  padding: 8px 18px;
   font-size: 14px;
-  opacity: 0.7;
 }
 </style>
 </head>
 
 <body>
 
-<div id="field">
-  <div id="ball"></div>
+<div id="field"></div>
+
+<div id="writeLayer">
+  <div id="wordFlash"></div>
+  <canvas id="drawCanvas" width="280" height="120"></canvas>
+  <button id="doneBtn">Fertig</button>
 </div>
 
-<div id="hint">Finde den Ball</div>
-
 <script>
-const ball = document.getElementById("ball");
 const field = document.getElementById("field");
+const writeLayer = document.getElementById("writeLayer");
+const wordFlash = document.getElementById("wordFlash");
+const canvas = document.getElementById("drawCanvas");
+const ctx = canvas.getContext("2d");
+const doneBtn = document.getElementById("doneBtn");
 
-let ballPos = { x: 0, y: 0 };
-let active = false;
+const words = ["FOCUS", "FLOW", "MIND", "TRACE", "BALL"];
+let drawing = false;
 
-/* Ball platzieren */
-function placeBall() {
-  const margin = 30;
-  const x = Math.random() * (window.innerWidth - margin);
-  const y = Math.random() * (window.innerHeight - margin);
+/* 🖊️ Zeichnen */
+canvas.addEventListener("pointerdown", e => {
+  drawing = true;
+  ctx.moveTo(e.offsetX, e.offsetY);
+});
+canvas.addEventListener("pointermove", e => {
+  if (!drawing) return;
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.stroke();
+});
+canvas.addEventListener("pointerup", () => drawing = false);
 
-  ball.style.left = x + "px";
-  ball.style.top = y + "px";
+/* SPIEL START */
+startRound();
 
-  ballPos = { x, y };
+function startRound() {
+  field.innerHTML = "";
+
+  // echter Ball
+  spawnBall(false);
+
+  // Fake-Bälle
+  for (let i = 0; i < 5; i++) spawnBall(true);
 }
 
-/* Ball zeigen → verstecken */
-function showBall() {
-  placeBall();
-  ball.style.opacity = 1;
-  active = true;
+function spawnBall(fake) {
+  const b = document.createElement("div");
+  b.className = "ball" + (fake ? " fake" : "");
+  b.style.left = Math.random() * (innerWidth - 20) + "px";
+  b.style.top = Math.random() * (innerHeight - 20) + "px";
+  field.appendChild(b);
 
-  setTimeout(() => {
-    ball.style.opacity = 0;
-  }, 1200); // sichtbar
+  setTimeout(() => b.style.opacity = 1, 100);
+  setTimeout(() => b.style.opacity = 0, 700);
 
-  setTimeout(() => {
-    active = false;
-  }, 1800);
-}
-
-/* Klick prüfen */
-field.onclick = (e) => {
-  if (active) return;
-
-  const dx = e.clientX - ballPos.x;
-  const dy = e.clientY - ballPos.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-
-  if (dist < 25) {
-    // gefunden
-    showBall();
+  if (!fake) {
+    b.onclick = () => triggerWord();
   }
-};
+}
 
-/* Start */
-setTimeout(showBall, 800);
+/* WORT → GEDÄCHTNIS */
+function triggerWord() {
+  const word = words[Math.floor(Math.random() * words.length)];
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  writeLayer.style.display = "flex";
+  wordFlash.textContent = word;
+
+  // 👁️ Nur kurz sichtbar
+  setTimeout(() => {
+    wordFlash.textContent = "✍️ Schreib es aus dem Kopf";
+  }, 700);
+}
+
+/* FERTIG */
+doneBtn.onclick = () => {
+  writeLayer.style.display = "none";
+  startRound();
+};
 </script>
 
 </body>
