@@ -92,9 +92,10 @@ function generateGrid() {
   hiddenWord = words[Math.floor(Math.random() * words.length)];
   const len = hiddenWord.length;
 
-  const horizontal = Math.random() < 0.5;
-  const startRow = Math.floor(Math.random() * (horizontal ? 12 : 12 - len));
-  const startCol = Math.floor(Math.random() * (horizontal ? 12 - len : 12));
+ const direction = Math.floor(Math.random() * 3);
+// 0 = horizontal | 1 = vertikal | 2 = diagonal
+const startRow = Math.floor(Math.random() * (12 - len));
+const startCol = Math.floor(Math.random() * (12 - len));
 
   positions = [];
 
@@ -103,12 +104,23 @@ function generateGrid() {
       const div = document.createElement("div");
       div.className = "cell";
 
-      if (horizontal && r === startRow && c >= startCol && c < startCol + len) {
-        div.textContent = hiddenWord[c - startCol];
-        positions.push({r, c, div});
-      } else if (!horizontal && c === startCol && r >= startRow && r < startRow + len) {
-        div.textContent = hiddenWord[r - startRow];
-        positions.push({r, c, div});
+if (direction === 0 && r === startRow && c >= startCol && c < startCol + len) {
+  div.textContent = hiddenWord[c - startCol];
+  positions.push({div});
+}
+else if (direction === 1 && c === startCol && r >= startRow && r < startRow + len) {
+  div.textContent = hiddenWord[r - startRow];
+  positions.push({div});
+}
+else if (
+  direction === 2 &&
+  r >= startRow && r < startRow + len &&
+  c >= startCol && c < startCol + len &&
+  (r - startRow) === (c - startCol)
+) {
+  div.textContent = hiddenWord[r - startRow];
+  positions.push({div});
+}
       } else {
         div.textContent = alphabet[Math.floor(Math.random() * alphabet.length)];
       }
