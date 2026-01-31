@@ -28,6 +28,8 @@ h1 { margin-bottom: 20px; }
   grid-template-columns: repeat(12, min(24px, 6vw));
   grid-template-rows: repeat(12, min(24px, 6vw));
   gap: 9px;
+  opacity: 0;          /* start unsichtbar */
+  transition: opacity 0.8s ease-in; /* smooth fade-in */
 }
 
 .cell {
@@ -193,6 +195,41 @@ function checkClick(div) {
 }
 
 generateGrid();
+// Grid nach dem Zeichnen einblenden
+grid.style.opacity = 0;
+setTimeout(() => {
+  grid.style.opacity = 1;
+}, 50);
+let wrongClicks = 0;
+
+function checkClick(div) {
+  const expected = positions[currentIndex]?.div;
+
+  if (div === expected) {
+    div.classList.add("correct");
+    currentIndex++;
+    if (currentIndex === positions.length) {
+      setTimeout(generateGrid, 1200);
+      wrongClicks = 0; // reset wrong counter
+    }
+  } else {
+    div.classList.add("wrong");
+    wrongClicks++;
+    setTimeout(() => div.classList.remove("wrong"), 700);
+
+    if (wrongClicks >= 12) {
+      // Ease-out Grid
+      grid.style.transition = "opacity 1s ease-out";
+      grid.style.opacity = 0;
+      setTimeout(() => {
+        generateGrid(); // neues Grid
+        grid.style.transition = "opacity 0.8s ease-in"; // zurücksetzen
+        grid.style.opacity = 1;
+        wrongClicks = 0; // reset
+      }, 1000);
+    }
+  }
+}
 </script>
 
 </body>
