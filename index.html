@@ -21,29 +21,31 @@ body {
 h1 {
   margin-bottom: 20px;
 }
-
+/* GRID */
 #grid {
   display: grid;
-  grid-template-columns: repeat(12, 32px);
-  grid-template-rows: repeat(12, 32px);
-  gap: 4px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(12, min(24px, 6vw));
+  grid-template-rows: repeat(12, min(24px, 6vw));
+  gap: 9px;
 }
 
 .cell {
-  width: 32px;
-  height: 32px;
+  background: white;
+  border-radius: 10%;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #222;
-  font-size: 16px;
+  font-size: calc(12px + 0.5vmin);
   font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
+  color: black;
   user-select: none;
-  transition: background 0.2s;
 }
+
+.cell.active {
+  opacity: 0.4;
+}
+
 
 .cell.correct {
   background: #0f0;
