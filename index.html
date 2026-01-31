@@ -63,7 +63,12 @@ const grid = document.getElementById("grid");
 const message = document.getElementById("message");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const words = ["GZIM", "MIND", "FOCUS", "FLOW", "VOID", "TRACE", "BRAIN", "LOGIC"];
+const words = [
+  "GZIM",  "MIND", "FLOW", "FOCUS", "VOID", "TRACE",
+  "LOGIC", "BRAIN", "THINK", "SHIFT", "AWARE",
+  "DEPTH", "VISION", "PATTERN", "REACT",
+  "MEMORY", "ATTENTION", "COGNITION"
+];
 
 let positions = [];
 let currentIndex = 0;
@@ -75,12 +80,14 @@ function generateGrid() {
   currentIndex = 0;
   positions = [];
 
-  /* 3 verschiedene Wörter wählen */
-  const selected = [];
-  while (selected.length < 3) {
-    const w = words[Math.floor(Math.random() * words.length)];
-    if (!selected.includes(w)) selected.push(w);
-  }
+  /* 6 verschiedene Wörter wählen */
+const WORDS_PER_GRID = 6;
+
+const selected = [];
+while (selected.length < WORDS_PER_GRID) {
+  const w = words[Math.floor(Math.random() * words.length)];
+  if (!selected.includes(w)) selected.push(w);
+}
 
   /* leeres Grid vorbereiten */
   const gridData = Array.from({ length: 12 }, () =>
