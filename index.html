@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>IQ Puzzle – Level 1</title>
+<title>IQ Word Puzzle – 12x12</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -15,7 +15,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 h1 {
@@ -24,34 +24,40 @@ h1 {
 
 #grid {
   display: grid;
-  grid-template-columns: repeat(3, 60px);
-  grid-template-rows: repeat(3, 60px);
-  gap: 8px;
+  grid-template-columns: repeat(12, 32px);
+  grid-template-rows: repeat(12, 32px);
+  gap: 4px;
   margin-bottom: 20px;
 }
 
 .cell {
-  background: #222;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  border-radius: 8px;
+  background: #222;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: default;
+  user-select: none;
 }
 
 input {
-  width: 60px;
+  width: 180px;
   padding: 6px;
-  font-size: 18px;
+  font-size: 16px;
   text-align: center;
 }
 
 button {
-  margin-top: 12px;
+  margin-top: 10px;
   padding: 6px 14px;
   font-size: 16px;
   cursor: pointer;
 }
+
 #message {
   margin-top: 12px;
   font-size: 18px;
@@ -62,11 +68,11 @@ button {
 
 <body>
 
-<h1>IQ Puzzle – Level 1</h1>
+<h1>IQ Word Puzzle – 12x12</h1>
 
 <div id="grid"></div>
 
-<input type="number" id="userInput" placeholder="?" />
+<input type="text" id="userInput" placeholder="Finde das Wort" />
 <button id="checkBtn">Prüfen</button>
 
 <div id="message"></div>
@@ -77,47 +83,59 @@ const userInput = document.getElementById("userInput");
 const checkBtn = document.getElementById("checkBtn");
 const message = document.getElementById("message");
 
-let solution;
-let missingIndex;
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const words = ["MIND", "FOCUS", "FLOW", "VOID", "TRACE"];
+let hiddenWord = "";
+let positions = [];
 
-// Generiert ein neues Puzzle
-function newPuzzle() {
+function generateGrid() {
   grid.innerHTML = "";
   message.textContent = "";
   userInput.value = "";
 
-  // Zufällige Zahlen 1-9
-  let numbers = [];
-  while(numbers.length < 9){
-    let n = Math.floor(Math.random()*9)+1;
-    if(!numbers.includes(n)) numbers.push(n);
+  // Zufälliges Wort auswählen
+  hiddenWord = words[Math.floor(Math.random() * words.length)];
+  const len = hiddenWord.length;
+
+  // Wort in Grid einfügen (horizontal oder vertikal zufällig)
+  const horizontal = Math.random() < 0.5;
+  const startRow = Math.floor(Math.random() * (horizontal ? 12 : 12 - len));
+  const startCol = Math.floor(Math.random() * (horizontal ? 12 - len : 12));
+
+  positions = [];
+
+  for (let r = 0; r < 12; r++) {
+    for (let c = 0; c < 12; c++) {
+      const div = document.createElement("div");
+      div.className = "cell";
+
+      // Buchstaben für Wort setzen
+      if (horizontal && r === startRow && c >= startCol && c < startCol + len) {
+        div.textContent = hiddenWord[c - startCol];
+        positions.push({r, c});
+      } else if (!horizontal && c === startCol && r >= startRow && r < startRow + len) {
+        div.textContent = hiddenWord[r - startRow];
+        positions.push({r, c});
+      } else {
+        div.textContent = alphabet[Math.floor(Math.random() * alphabet.length)];
+      }
+
+      grid.appendChild(div);
+    }
   }
-
-  missingIndex = Math.floor(Math.random()*9); // eine Zahl fehlt
-  solution = numbers[missingIndex];
-
-  numbers[missingIndex] = "?";
-
-  numbers.forEach(num => {
-    const div = document.createElement("div");
-    div.className = "cell";
-    div.textContent = num;
-    grid.appendChild(div);
-  });
 }
 
 // Prüfen
 checkBtn.onclick = () => {
-  const val = parseInt(userInput.value);
-  if(val === solution){
-    message.textContent = "✅ Richtig! Neues Puzzle…";
-    setTimeout(newPuzzle, 1000);
+  if (userInput.value.toUpperCase() === hiddenWord) {
+    message.textContent = "✅ Richtig! Nächstes Wort…";
+    setTimeout(generateGrid, 1000);
   } else {
-    message.textContent = "❌ Falsch, versuche es nochmal.";
+    message.textContent = "❌ Falsch! Versuche es nochmal.";
   }
 }
 
-newPuzzle();
+generateGrid();
 </script>
 
 </body>
