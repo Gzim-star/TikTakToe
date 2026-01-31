@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>IQ Word Puzzle – Klick-Version</title>
+<title>IQ Word Puzzle – 3 Words</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -18,9 +18,8 @@ body {
   min-height: 100vh;
 }
 
-h1 {
-  margin-bottom: 20px;
-}
+h1 { margin-bottom: 20px; }
+
 /* GRID */
 #grid {
   display: grid;
@@ -42,20 +41,8 @@ h1 {
   user-select: none;
 }
 
-.cell.active {
-  opacity: 0.4;
-}
-
-
-.cell.correct {
-  background: #0f0;
-  color: black;
-}
-
-.cell.wrong {
-  background: #f00;
-  color: black;
-}
+.cell.correct { background: #0f0; }
+.cell.wrong { background: #f00; }
 
 #message {
   margin-top: 12px;
@@ -68,7 +55,6 @@ h1 {
 <body>
 
 <h1>IQ</h1>
-
 <div id="grid"></div>
 <div id="message"></div>
 
@@ -77,51 +63,42 @@ const grid = document.getElementById("grid");
 const message = document.getElementById("message");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const words = ["GZIM", "MIND", "FOCUS", "FLOW", "VOID", "TRACE"];
-let hiddenWord = "";
+const words = ["GZIM", "MIND", "FOCUS", "FLOW", "VOID", "TRACE", "BRAIN", "LOGIC"];
+
 let positions = [];
 let currentIndex = 0;
 
+/* 🧠 Grid erzeugen */
 function generateGrid() {
   grid.innerHTML = "";
   message.textContent = "";
   currentIndex = 0;
-
-  hiddenWord = words[Math.floor(Math.random() * words.length)];
-  const len = hiddenWord.length;
-
-const mode = Math.floor(Math.random() * 3);
-// 0 = horizontal ➡️ | 1 = vertikal ⬇️ | 2 = diagonal ↘️
-
-const startRow = Math.floor(Math.random() * (mode === 0 ? 12 : 12 - len));
-const startCol = Math.floor(Math.random() * (mode === 1 ? 12 : 12 - len));
-
   positions = [];
 
+  /* 3 verschiedene Wörter wählen */
+  const selected = [];
+  while (selected.length < 3) {
+    const w = words[Math.floor(Math.random() * words.length)];
+    if (!selected.includes(w)) selected.push(w);
+  }
+
+  /* leeres Grid vorbereiten */
+  const gridData = Array.from({ length: 12 }, () =>
+    Array.from({ length: 12 }, () => null)
+  );
+
+  /* Wörter platzieren */
+  selected.forEach(word => placeWord(word, gridData));
+
+  /* Grid zeichnen */
   for (let r = 0; r < 12; r++) {
     for (let c = 0; c < 12; c++) {
       const div = document.createElement("div");
       div.className = "cell";
 
-       if (mode === 0 && r === startRow && c >= startCol && c < startCol + len) {
-       div.textContent = hiddenWord[c - startCol];
-       positions.push({ r, c, div });
-
-
-      } else if (mode === 1 && c === startCol && r >= startRow && r < startRow + len) {
-        div.textContent = hiddenWord[r - startRow];
-        positions.push({r, c, div});
-      
-       
-      } else if (
-       mode === 2 &&
-       r >= startRow && r < startRow + len &&
-       c >= startCol && c < startCol + len &&
-      (r - startRow) === (c - startCol)
-       ) {
-      div.textContent = hiddenWord[r - startRow];
-      positions.push({ r, c, div });
-
+      if (gridData[r][c]) {
+        div.textContent = gridData[r][c].letter;
+        positions.push({ div, order: gridData[r][c].order });
       } else {
         div.textContent = alphabet[Math.floor(Math.random() * alphabet.length)];
       }
@@ -130,23 +107,62 @@ const startCol = Math.floor(Math.random() * (mode === 1 ? 12 : 12 - len));
       grid.appendChild(div);
     }
   }
+
+  /* Klick-Reihenfolge sortieren */
+  positions.sort((a, b) => a.order - b.order);
 }
 
-function checkClick(div) {
-  const expectedDiv = positions[currentIndex].div;
+/* 🔤 Wort platzieren */
+let globalOrder = 0;
 
-  if (div === expectedDiv) {
+function placeWord(word, gridData) {
+  const len = word.length;
+  let placed = false;
+
+  while (!placed) {
+    const mode = Math.floor(Math.random() * 3);
+    const maxRow = mode === 0 ? 12 : 12 - len;
+    const maxCol = mode === 1 ? 12 : 12 - len;
+
+    const sr = Math.floor(Math.random() * maxRow);
+    const sc = Math.floor(Math.random() * maxCol);
+
+    let fits = true;
+    for (let i = 0; i < len; i++) {
+      const r = sr + (mode === 1 || mode === 2 ? i : 0);
+      const c = sc + (mode === 0 || mode === 2 ? i : 0);
+      if (gridData[r][c]) { fits = false; break; }
+    }
+
+    if (!fits) continue;
+
+    for (let i = 0; i < len; i++) {
+      const r = sr + (mode === 1 || mode === 2 ? i : 0);
+      const c = sc + (mode === 0 || mode === 2 ? i : 0);
+      gridData[r][c] = {
+        letter: word[i],
+        order: globalOrder++
+      };
+    }
+
+    placed = true;
+  }
+}
+
+/* ✅ Klick prüfen */
+function checkClick(div) {
+  const expected = positions[currentIndex]?.div;
+
+  if (div === expected) {
     div.classList.add("correct");
     currentIndex++;
-    message.textContent = "";
-    if (currentIndex === hiddenWord.length) {
-      message.textContent = "";
-      setTimeout(generateGrid, 1000);
+
+    if (currentIndex === positions.length) {
+      setTimeout(generateGrid, 1200);
     }
   } else {
     div.classList.add("wrong");
-    message.textContent = ``;
-    setTimeout(() => div.classList.remove("wrong"), 800);
+    setTimeout(() => div.classList.remove("wrong"), 700);
   }
 }
 
