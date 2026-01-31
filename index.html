@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>IQ Word Puzzle – 12x12</title>
+<title>IQ Word Puzzle – Klick-Version</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -40,22 +40,14 @@ h1 {
   font-size: 16px;
   font-weight: bold;
   border-radius: 4px;
-  cursor: default;
-  user-select: none;
-}
-
-input {
-  width: 180px;
-  padding: 6px;
-  font-size: 16px;
-  text-align: center;
-}
-
-button {
-  margin-top: 10px;
-  padding: 6px 14px;
-  font-size: 16px;
   cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.cell.selected {
+  background: #0f0;
+  color: black;
 }
 
 #message {
@@ -68,36 +60,30 @@ button {
 
 <body>
 
-<h1>IQ Word Puzzle – 12x12</h1>
+<h1>IQ Word Puzzle – Klick-Version</h1>
 
 <div id="grid"></div>
-
-<input type="text" id="userInput" placeholder="Finde das Wort" />
-<button id="checkBtn">Prüfen</button>
-
 <div id="message"></div>
 
 <script>
 const grid = document.getElementById("grid");
-const userInput = document.getElementById("userInput");
-const checkBtn = document.getElementById("checkBtn");
 const message = document.getElementById("message");
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const words = ["MIND", "FOCUS", "FLOW", "VOID", "TRACE"];
 let hiddenWord = "";
 let positions = [];
+let currentIndex = 0;
 
 function generateGrid() {
   grid.innerHTML = "";
   message.textContent = "";
-  userInput.value = "";
+  currentIndex = 0;
 
-  // Zufälliges Wort auswählen
+  // Wort auswählen
   hiddenWord = words[Math.floor(Math.random() * words.length)];
   const len = hiddenWord.length;
 
-  // Wort in Grid einfügen (horizontal oder vertikal zufällig)
   const horizontal = Math.random() < 0.5;
   const startRow = Math.floor(Math.random() * (horizontal ? 12 : 12 - len));
   const startCol = Math.floor(Math.random() * (horizontal ? 12 - len : 12));
@@ -109,29 +95,39 @@ function generateGrid() {
       const div = document.createElement("div");
       div.className = "cell";
 
-      // Buchstaben für Wort setzen
+      // Wort setzen
       if (horizontal && r === startRow && c >= startCol && c < startCol + len) {
         div.textContent = hiddenWord[c - startCol];
-        positions.push({r, c});
+        positions.push({r, c, div});
       } else if (!horizontal && c === startCol && r >= startRow && r < startRow + len) {
         div.textContent = hiddenWord[r - startRow];
-        positions.push({r, c});
+        positions.push({r, c, div});
       } else {
         div.textContent = alphabet[Math.floor(Math.random() * alphabet.length)];
       }
 
+      div.onclick = () => checkClick(div);
       grid.appendChild(div);
     }
   }
 }
 
-// Prüfen
-checkBtn.onclick = () => {
-  if (userInput.value.toUpperCase() === hiddenWord) {
-    message.textContent = "✅ Richtig! Nächstes Wort…";
-    setTimeout(generateGrid, 1000);
+function checkClick(div) {
+  // Prüfen, ob der richtige Buchstabe in Reihenfolge
+  const expectedDiv = positions[currentIndex].div;
+
+  if (div === expectedDiv) {
+    div.classList.add("selected");
+    currentIndex++;
+    if (currentIndex === hiddenWord.length) {
+      message.textContent = "✅ Richtig! Nächstes Wort…";
+      setTimeout(generateGrid, 1000);
+    }
   } else {
-    message.textContent = "❌ Falsch! Versuche es nochmal.";
+    // Falscher Klick: reset
+    message.textContent = "❌ Falsch! Versuch nochmal.";
+    positions.forEach(p => p.div.classList.remove("selected"));
+    currentIndex = 0;
   }
 }
 
