@@ -2,68 +2,104 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Running Camel</title>
+<title>Desert Camel Animation</title>
 <style>
 body { margin:0; overflow:hidden; background:#87CEEB; }
 canvas { display:block; background:#87CEEB; }
 </style>
 </head>
 <body>
-<canvas id="camelCanvas"></canvas>
+<canvas id="desertCanvas"></canvas>
 <script>
-const canvas=document.getElementById('camelCanvas');
-const ctx=canvas.getContext('2d');
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
+const canvas = document.getElementById('desertCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-let frame=0;
+let camelX = canvas.width/2;
+let camelY = canvas.height/2 + 50;
+let legPhase = 0;
 
-function drawBackground(){
-  // Himmel
-  ctx.fillStyle='#87CEEB';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  // Sonne
-  ctx.fillStyle='#FFD700';
-  ctx.beginPath();
-  ctx.arc(100,100,50,0,2*Math.PI);
-  ctx.fill();
+// Sand + Wasser
+function drawGround() {
   // Sand
-  ctx.fillStyle='#EDC9AF';
-  ctx.fillRect(0,canvas.height/2,canvas.width,canvas.height/2);
-  // Wasser
-  ctx.fillStyle='#1E90FF';
-  ctx.fillRect(canvas.width*0.7,canvas.height/2+50,150,30);
+  ctx.fillStyle = '#EDC9AF';
+  ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+
+  // Wasser kleine Oase
+  ctx.fillStyle = '#00BFFF';
+  const wave = Math.sin(Date.now()*0.005)*5;
+  ctx.beginPath();
+  ctx.ellipse(canvas.width*0.8, canvas.height/2 + 70 + wave, 60, 20, 0, 0, Math.PI*2);
+  ctx.fill();
 }
 
-function drawCamel(x,y){
+// Sonne
+function drawSun() {
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.arc(100, 100, 50, 0, Math.PI*2);
+  ctx.fill();
+}
+
+// Kamel Körper
+function drawCamel(x, y, phase) {
   // Beine Animation
-  const legOffset=Math.sin(frame/5)*10;
-  ctx.fillStyle='#8B4513';
-  ctx.fillRect(x-20,y,10,30); // hinten links
-  ctx.fillRect(x,y+legOffset,10,30); // hinten rechts
-  ctx.fillRect(x+30,y-legOffset,10,30); // vorne links
-  ctx.fillRect(x+50,y,10,30); // vorne rechts
+  const legOffset = Math.sin(phase)*10;
+
+  // Beine
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(x-20, y+30+legOffset, 10, 30); // hinten links
+  ctx.fillRect(x+10, y+30-legOffset, 10, 30); // hinten rechts
+  ctx.fillRect(x+40, y+30+legOffset, 10, 30); // vorne links
+  ctx.fillRect(x+70, y+30-legOffset, 10, 30); // vorne rechts
 
   // Körper
-  ctx.fillStyle='#A0522D';
-  ctx.fillRect(x-10,y-40,70,40);
+  ctx.fillStyle = '#A0522D';
+  ctx.fillRect(x, y, 80, 40);
+
   // Höcker
-  ctx.fillStyle='#CD853F';
-  ctx.fillRect(x+10,y-60,30,20);
+  ctx.fillStyle = '#D2691E';
+  ctx.fillRect(x+20, y-20, 40, 20);
+
   // Hals
-  ctx.fillStyle='#8B4513';
-  ctx.fillRect(x+60,y-50,10,30);
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(x+70, y-30, 10, 30);
+
   // Kopf
-  ctx.fillStyle='#8B4513';
-  ctx.fillRect(x+65,y-60,20,20);
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(x+70, y-40, 20, 20);
+
+  // Augen
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(x+85, y-35, 3, 0, Math.PI*2);
+  ctx.fill();
 }
 
-function animate(){
-  frame++;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawBackground();
-  let camelX=(frame*2)%canvas.width;
-  drawCamel(camelX,canvas.height/2+50);
+function drawDunes() {
+  ctx.fillStyle = '#DEB887';
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height/2+50);
+  ctx.quadraticCurveTo(canvas.width/4, canvas.height/2, canvas.width/2, canvas.height/2+50);
+  ctx.quadraticCurveTo(canvas.width*3/4, canvas.height/2+100, canvas.width, canvas.height/2+50);
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.lineTo(0, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSun();
+  drawDunes();
+  drawGround();
+  drawCamel(camelX, camelY, legPhase);
+
+  legPhase += 0.1;
+  camelX += 1;
+  if(camelX > canvas.width + 100) camelX = -100;
+
   requestAnimationFrame(animate);
 }
 
