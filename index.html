@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Desert Camel Animation</title>
+<title>Desert Camel Detailed Animation</title>
 <style>
 body { margin:0; overflow:hidden; background:#87CEEB; }
 canvas { display:block; background:#87CEEB; }
@@ -11,48 +11,67 @@ canvas { display:block; background:#87CEEB; }
 <body>
 <canvas id="desertCanvas"></canvas>
 <script>
+// ==== CANVAS SETUP ====
 const canvas = document.getElementById('desertCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// ==== VARIABLES ====
 let camelX = canvas.width/2;
 let camelY = canvas.height/2 + 50;
 let legPhase = 0;
+let headPhase = 0;
 
-// Sand + Wasser
-function drawGround() {
-  // Sand
-  ctx.fillStyle = '#EDC9AF';
-  ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+// ==== SUN ====
+function drawSun(){
+  const pulse = Math.sin(Date.now()*0.002)*10;
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.arc(100, 100, 50 + pulse, 0, Math.PI*2);
+  ctx.fill();
+}
 
-  // Wasser kleine Oase
-  ctx.fillStyle = '#00BFFF';
+// ==== DUNES ====
+function drawDunes(){
+  ctx.fillStyle = '#DEB887';
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height/2 + 50);
+  ctx.quadraticCurveTo(canvas.width/4, canvas.height/2, canvas.width/2, canvas.height/2+50);
+  ctx.quadraticCurveTo(canvas.width*3/4, canvas.height/2+100, canvas.width, canvas.height/2+50);
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.lineTo(0, canvas.height);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ==== WATER ====
+function drawWater(){
   const wave = Math.sin(Date.now()*0.005)*5;
+  ctx.fillStyle = '#00BFFF';
   ctx.beginPath();
   ctx.ellipse(canvas.width*0.8, canvas.height/2 + 70 + wave, 60, 20, 0, 0, Math.PI*2);
   ctx.fill();
 }
 
-// Sonne
-function drawSun() {
-  ctx.fillStyle = '#FFD700';
-  ctx.beginPath();
-  ctx.arc(100, 100, 50, 0, Math.PI*2);
-  ctx.fill();
+// ==== GROUND / SAND ====
+function drawSand(){
+  ctx.fillStyle = '#EDC9AF';
+  ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
 }
 
-// Kamel Körper
-function drawCamel(x, y, phase) {
-  // Beine Animation
-  const legOffset = Math.sin(phase)*10;
-
+// ==== CAMEL BODY PARTS ====
+function drawCamel(x, y, legPhase, headPhase){
+  // Beine Animation (separate Phasen)
+  const legOffset1 = Math.sin(legPhase)*10;
+  const legOffset2 = Math.cos(legPhase)*10;
+  
   // Beine
   ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x-20, y+30+legOffset, 10, 30); // hinten links
-  ctx.fillRect(x+10, y+30-legOffset, 10, 30); // hinten rechts
-  ctx.fillRect(x+40, y+30+legOffset, 10, 30); // vorne links
-  ctx.fillRect(x+70, y+30-legOffset, 10, 30); // vorne rechts
+  ctx.fillRect(x-20, y+30+legOffset1, 10, 30); // hinten links
+  ctx.fillRect(x+10, y+30-legOffset2, 10, 30); // hinten rechts
+  ctx.fillRect(x+40, y+30+legOffset2, 10, 30); // vorne links
+  ctx.fillRect(x+70, y+30-legOffset1, 10, 30); // vorne rechts
 
   // Körper
   ctx.fillStyle = '#A0522D';
@@ -62,41 +81,38 @@ function drawCamel(x, y, phase) {
   ctx.fillStyle = '#D2691E';
   ctx.fillRect(x+20, y-20, 40, 20);
 
-  // Hals
+  // Hals Bewegung
+  const neckOffset = Math.sin(headPhase)*5;
   ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+70, y-30, 10, 30);
+  ctx.fillRect(x+70, y-30+neckOffset, 10, 30);
 
-  // Kopf
+  // Kopf Bewegung
+  const headOffset = Math.sin(headPhase*1.5)*5;
   ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+70, y-40, 20, 20);
+  ctx.fillRect(x+70, y-40+headOffset, 20, 20);
 
   // Augen
   ctx.fillStyle = '#000';
   ctx.beginPath();
-  ctx.arc(x+85, y-35, 3, 0, Math.PI*2);
+  ctx.arc(x+85, y-35+headOffset, 3, 0, Math.PI*2);
   ctx.fill();
 }
 
-function drawDunes() {
-  ctx.fillStyle = '#DEB887';
-  ctx.beginPath();
-  ctx.moveTo(0, canvas.height/2+50);
-  ctx.quadraticCurveTo(canvas.width/4, canvas.height/2, canvas.width/2, canvas.height/2+50);
-  ctx.quadraticCurveTo(canvas.width*3/4, canvas.height/2+100, canvas.width, canvas.height/2+50);
-  ctx.lineTo(canvas.width, canvas.height);
-  ctx.lineTo(0, canvas.height);
-  ctx.closePath();
-  ctx.fill();
-}
+// ==== ANIMATION LOOP ====
+function animate(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawSun();
   drawDunes();
-  drawGround();
-  drawCamel(camelX, camelY, legPhase);
+  drawSand();
+  drawWater();
+  drawCamel(camelX, camelY, legPhase, headPhase);
 
+  // Update Phasen
   legPhase += 0.1;
+  headPhase += 0.05;
+
+  // Kamel Bewegung
   camelX += 1;
   if(camelX > canvas.width + 100) camelX = -100;
 
