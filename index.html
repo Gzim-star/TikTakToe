@@ -2,60 +2,72 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Block Camel</title>
+<title>Desert Camel</title>
 <style>
-  body {
-    margin: 0;
-    height: 100vh;
-    background: #f7e8c7; /* Wüstenfarbe */
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    overflow: hidden;
-  }
-
-  .camel {
-    display: grid;
-    grid-template-rows: repeat(3, 30px);
-    grid-template-columns: repeat(6, 30px);
-    gap: 2px;
-    transform: translateY(0);
-    animation: surf 1s infinite alternate;
-  }
-
-  .camel div {
-    background: #a87c4a;
-  }
-
-  /* Kopf */
-  .camel div.head { grid-row: 1; grid-column: 1 / 2; }
-  .camel div.hump1 { grid-row: 1; grid-column: 2 / 3; }
-  .camel div.hump2 { grid-row: 1; grid-column: 3 / 4; }
-
-  /* Körper */
-  .camel div.body { grid-row: 2; grid-column: 1 / 6; }
-
-  /* Beine */
-  .camel div.leg1 { grid-row: 3; grid-column: 1 / 2; }
-  .camel div.leg2 { grid-row: 3; grid-column: 3 / 4; }
-  .camel div.leg3 { grid-row: 3; grid-column: 5 / 6; }
-
-  @keyframes surf {
-    0% { transform: translateY(0px); }
-    100% { transform: translateY(-5px); }
-  }
+  body { margin:0; overflow:hidden; background:#87CEEB; }
+  canvas { display:block; background:#87CEEB; }
 </style>
 </head>
 <body>
-  <div class="camel">
-    <div class="head"></div>
-    <div class="hump1"></div>
-    <div class="hump2"></div>
-    <div class="body"></div>
-    <div class="leg1"></div>
-    <div class="leg2"></div>
-    <div class="leg3"></div>
-  </div>
+<canvas id="desertCanvas"></canvas>
+<script>
+const canvas = document.getElementById('desertCanvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let camelX = -100; // Startposition links
+
+function drawDesert() {
+  // Himmel
+  ctx.fillStyle = '#87CEEB';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Sonne
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.arc(100, 100, 50, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sand
+  ctx.fillStyle = '#EDC9AF';
+  ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+}
+
+function drawCamel(x, y) {
+  // Körper
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(x, y-40, 80, 40);
+
+  // Höcker
+  ctx.fillStyle = '#A0522D';
+  ctx.fillRect(x+20, y-60, 40, 20);
+
+  // Kopf
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(x+70, y-50, 20, 20);
+
+  // Beine
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(x+10, y, 10, 20);
+  ctx.fillRect(x+30, y, 10, 20);
+  ctx.fillRect(x+50, y, 10, 20);
+  ctx.fillRect(x+70, y, 10, 20);
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawDesert();
+  drawCamel(camelX, canvas.height/2);
+  
+  camelX += 1; // Geschwindigkeit
+  if(camelX > canvas.width + 100) camelX = -100; // Loop
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
 </body>
 </html>
