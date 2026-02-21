@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Desert Camel</title>
+<title>Desert Camel with Water</title>
 <style>
   body { margin:0; overflow:hidden; background:#87CEEB; }
   canvas { display:block; background:#87CEEB; }
@@ -33,6 +33,12 @@ function drawDesert() {
   // Sand
   ctx.fillStyle = '#EDC9AF';
   ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+
+  // Wasser (Oase)
+  ctx.fillStyle = '#1E90FF';
+  ctx.beginPath();
+  ctx.ellipse(canvas.width/2, canvas.height/2 + 50, 150, 40, 0, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawCamel(x, y) {
