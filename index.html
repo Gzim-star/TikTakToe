@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Running Desert Camel</title>
+<title>Emoji-Style Camel</title>
 <style>
   body { margin:0; overflow:hidden; background:#87CEEB; }
   canvas { display:block; background:#87CEEB; }
@@ -18,7 +18,7 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let camelX = 100;
-let step = 0; // Schritt für Beine Animation
+let step = 0;
 
 function drawDesert() {
   // Himmel
@@ -35,7 +35,7 @@ function drawDesert() {
   ctx.fillStyle = '#EDC9AF';
   ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
 
-  // Wasser (Oase)
+  // Wasser
   ctx.fillStyle = '#1E90FF';
   ctx.beginPath();
   ctx.ellipse(canvas.width/2, canvas.height/2 + 50, 150, 40, 0, 0, Math.PI * 2);
@@ -43,27 +43,33 @@ function drawDesert() {
 }
 
 function drawCamel(x, y, step) {
-  // Körper
+  // Körper (Höcker-Körper) rund
   ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x, y-40, 80, 40);
-
-  // Höcker
-  ctx.fillStyle = '#A0522D';
-  ctx.fillRect(x+20, y-60, 40, 20);
+  ctx.beginPath();
+  ctx.ellipse(x+40, y-20, 50, 25, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   // Kopf
   ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+70, y-50, 20, 20);
+  ctx.beginPath();
+  ctx.arc(x+75, y-30, 12, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Beine animieren
+  // Beine animiert
   const legOffset = 5 * Math.sin(step);
   ctx.fillStyle = '#8B4513';
-  // Vorderbeine
-  ctx.fillRect(x+10, y+legOffset, 10, 20);
-  ctx.fillRect(x+30, y-legOffset, 10, 20);
-  // Hinterbeine
-  ctx.fillRect(x+50, y-legOffset, 10, 20);
-  ctx.fillRect(x+70, y+legOffset, 10, 20);
+  ctx.beginPath();
+  ctx.rect(x+20, y+legOffset, 10, 20);
+  ctx.rect(x+40, y-legOffset, 10, 20);
+  ctx.rect(x+60, y+legOffset, 10, 20);
+  ctx.rect(x+80, y-legOffset, 10, 20);
+  ctx.fill();
+
+  // Höcker rund
+  ctx.fillStyle = '#A0522D';
+  ctx.beginPath();
+  ctx.arc(x+40, y-40, 15, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function animate() {
@@ -74,7 +80,7 @@ function animate() {
   camelX += 1;
   if(camelX > canvas.width) camelX = -100;
 
-  step += 0.15; // Geschwindigkeit der Laufbewegung
+  step += 0.15;
 
   requestAnimationFrame(animate);
 }
