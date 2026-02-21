@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Desert Camel with Water</title>
+<title>Running Desert Camel</title>
 <style>
   body { margin:0; overflow:hidden; background:#87CEEB; }
   canvas { display:block; background:#87CEEB; }
@@ -17,7 +17,8 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let camelX = -100; // Startposition links
+let camelX = 100;
+let step = 0; // Schritt für Beine Animation
 
 function drawDesert() {
   // Himmel
@@ -41,7 +42,7 @@ function drawDesert() {
   ctx.fill();
 }
 
-function drawCamel(x, y) {
+function drawCamel(x, y, step) {
   // Körper
   ctx.fillStyle = '#8B4513';
   ctx.fillRect(x, y-40, 80, 40);
@@ -54,21 +55,26 @@ function drawCamel(x, y) {
   ctx.fillStyle = '#8B4513';
   ctx.fillRect(x+70, y-50, 20, 20);
 
-  // Beine
+  // Beine animieren
+  const legOffset = 5 * Math.sin(step);
   ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+10, y, 10, 20);
-  ctx.fillRect(x+30, y, 10, 20);
-  ctx.fillRect(x+50, y, 10, 20);
-  ctx.fillRect(x+70, y, 10, 20);
+  // Vorderbeine
+  ctx.fillRect(x+10, y+legOffset, 10, 20);
+  ctx.fillRect(x+30, y-legOffset, 10, 20);
+  // Hinterbeine
+  ctx.fillRect(x+50, y-legOffset, 10, 20);
+  ctx.fillRect(x+70, y+legOffset, 10, 20);
 }
 
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawDesert();
-  drawCamel(camelX, canvas.height/2);
+  drawCamel(camelX, canvas.height/2, step);
   
-  camelX += 1; // Geschwindigkeit
-  if(camelX > canvas.width + 100) camelX = -100; // Loop
+  camelX += 1;
+  if(camelX > canvas.width) camelX = -100;
+
+  step += 0.15; // Geschwindigkeit der Laufbewegung
 
   requestAnimationFrame(animate);
 }
