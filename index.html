@@ -2,68 +2,88 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Desert Camel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Walking Camel</title>
 <style>
-  body { margin:0; overflow:hidden; background:#87CEEB; }
-  canvas { display:block; background:#87CEEB; }
+  body { margin:0; overflow:hidden; background:#f0d18b; }
+  canvas { display:block; }
 </style>
 </head>
 <body>
 <canvas id="desertCanvas"></canvas>
+
 <script>
 const canvas = document.getElementById('desertCanvas');
 const ctx = canvas.getContext('2d');
-
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let camelX = -100; // Startposition links
+// Camel parameters
+let camel = {
+  x: 50,
+  y: canvas.height - 150,
+  width: 100,
+  height: 60,
+  legOffset: 0,
+  direction: 1
+};
 
-function drawDesert() {
-  // Himmel
-  ctx.fillStyle = '#87CEEB';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+// Sand particles
+let sand = [];
 
-  // Sonne
-  ctx.fillStyle = '#FFD700';
-  ctx.beginPath();
-  ctx.arc(100, 100, 50, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Sand
-  ctx.fillStyle = '#EDC9AF';
-  ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+// Animate legs
+function drawCamel() {
+  ctx.fillStyle = '#c49b59';
+  
+  // Body
+  ctx.fillRect(camel.x, camel.y - 40, camel.width, 40);
+  
+  // Neck and Head
+  ctx.fillRect(camel.x + camel.width - 20, camel.y - 70, 20, 30);
+  ctx.fillRect(camel.x + camel.width - 15, camel.y - 80, 15, 15);
+  
+  // Legs (simple moving)
+  let legMotion = Math.sin(camel.legOffset) * 10;
+  ctx.fillRect(camel.x + 10, camel.y, 10, 40 + legMotion);
+  ctx.fillRect(camel.x + 30, camel.y, 10, 40 - legMotion);
+  ctx.fillRect(camel.x + 60, camel.y, 10, 40 - legMotion);
+  ctx.fillRect(camel.x + 80, camel.y, 10, 40 + legMotion);
 }
 
-function drawCamel(x, y) {
-  // Körper
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x, y-40, 80, 40);
+// Sand effect
+function addSand() {
+  sand.push({x: camel.x, y: camel.y + 40, size: Math.random()*3+1, speed: Math.random()*2+1});
+}
 
-  // Höcker
-  ctx.fillStyle = '#A0522D';
-  ctx.fillRect(x+20, y-60, 40, 20);
-
-  // Kopf
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+70, y-50, 20, 20);
-
-  // Beine
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+10, y, 10, 20);
-  ctx.fillRect(x+30, y, 10, 20);
-  ctx.fillRect(x+50, y, 10, 20);
-  ctx.fillRect(x+70, y, 10, 20);
+function drawSand() {
+  ctx.fillStyle = '#e2c27a';
+  sand.forEach((s, i) => {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+    ctx.fill();
+    s.y += s.speed;
+    if(s.y > canvas.height) sand.splice(i,1);
+  });
 }
 
 function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawDesert();
-  drawCamel(camelX, canvas.height/2);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   
-  camelX += 1; // Geschwindigkeit
-  if(camelX > canvas.width + 100) camelX = -100; // Loop
-
+  // Draw ground
+  ctx.fillStyle = '#e2c27a';
+  ctx.fillRect(0, canvas.height-100, canvas.width, 100);
+  
+  drawCamel();
+  drawSand();
+  
+  camel.x += 2 * camel.direction;
+  camel.legOffset += 0.1;
+  
+  addSand();
+  
+  // Reset when camel goes off-screen
+  if(camel.x > canvas.width) camel.x = -camel.width;
+  
   requestAnimationFrame(animate);
 }
 
