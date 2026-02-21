@@ -3,91 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Walking Camel</title>
+<title>Block Camel</title>
 <style>
-  body { margin:0; overflow:hidden; background:#f0d18b; }
-  canvas { display:block; }
+  body {
+    margin: 0;
+    height: 100vh;
+    background: #f7e8c7; /* Wüstenfarbe */
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+
+  .camel {
+    display: grid;
+    grid-template-rows: repeat(3, 30px);
+    grid-template-columns: repeat(6, 30px);
+    gap: 2px;
+    transform: translateY(0);
+    animation: surf 1s infinite alternate;
+  }
+
+  .camel div {
+    background: #a87c4a;
+  }
+
+  /* Kopf */
+  .camel div.head { grid-row: 1; grid-column: 1 / 2; }
+  .camel div.hump1 { grid-row: 1; grid-column: 2 / 3; }
+  .camel div.hump2 { grid-row: 1; grid-column: 3 / 4; }
+
+  /* Körper */
+  .camel div.body { grid-row: 2; grid-column: 1 / 6; }
+
+  /* Beine */
+  .camel div.leg1 { grid-row: 3; grid-column: 1 / 2; }
+  .camel div.leg2 { grid-row: 3; grid-column: 3 / 4; }
+  .camel div.leg3 { grid-row: 3; grid-column: 5 / 6; }
+
+  @keyframes surf {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-5px); }
+  }
 </style>
 </head>
 <body>
-<canvas id="desertCanvas"></canvas>
-
-<script>
-const canvas = document.getElementById('desertCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-// Camel parameters
-let camel = {
-  x: 50,
-  y: canvas.height - 150,
-  width: 100,
-  height: 60,
-  legOffset: 0,
-  direction: 1
-};
-
-// Sand particles
-let sand = [];
-
-// Animate legs
-function drawCamel() {
-  ctx.fillStyle = '#c49b59';
-  
-  // Body
-  ctx.fillRect(camel.x, camel.y - 40, camel.width, 40);
-  
-  // Neck and Head
-  ctx.fillRect(camel.x + camel.width - 20, camel.y - 70, 20, 30);
-  ctx.fillRect(camel.x + camel.width - 15, camel.y - 80, 15, 15);
-  
-  // Legs (simple moving)
-  let legMotion = Math.sin(camel.legOffset) * 10;
-  ctx.fillRect(camel.x + 10, camel.y, 10, 40 + legMotion);
-  ctx.fillRect(camel.x + 30, camel.y, 10, 40 - legMotion);
-  ctx.fillRect(camel.x + 60, camel.y, 10, 40 - legMotion);
-  ctx.fillRect(camel.x + 80, camel.y, 10, 40 + legMotion);
-}
-
-// Sand effect
-function addSand() {
-  sand.push({x: camel.x, y: camel.y + 40, size: Math.random()*3+1, speed: Math.random()*2+1});
-}
-
-function drawSand() {
-  ctx.fillStyle = '#e2c27a';
-  sand.forEach((s, i) => {
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
-    ctx.fill();
-    s.y += s.speed;
-    if(s.y > canvas.height) sand.splice(i,1);
-  });
-}
-
-function animate() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  
-  // Draw ground
-  ctx.fillStyle = '#e2c27a';
-  ctx.fillRect(0, canvas.height-100, canvas.width, 100);
-  
-  drawCamel();
-  drawSand();
-  
-  camel.x += 2 * camel.direction;
-  camel.legOffset += 0.1;
-  
-  addSand();
-  
-  // Reset when camel goes off-screen
-  if(camel.x > canvas.width) camel.x = -camel.width;
-  
-  requestAnimationFrame(animate);
-}
-
-animate();
-</script>
+  <div class="camel">
+    <div class="head"></div>
+    <div class="hump1"></div>
+    <div class="hump2"></div>
+    <div class="body"></div>
+    <div class="leg1"></div>
+    <div class="leg2"></div>
+    <div class="leg3"></div>
+  </div>
 </body>
 </html>
