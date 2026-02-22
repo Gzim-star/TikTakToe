@@ -1,213 +1,202 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trop Adventure</title>
+<title>Adventure Game Pro</title>
 <style>
-  body { margin:0; overflow:hidden; background:#87CEEB; font-family:sans-serif; }
-  canvas { display:block; }
-  .controls {
-    position: fixed;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+body {
+    margin: 0;
+    background: #111;
     display: flex;
-    gap: 10px;
-    z-index: 100;
-  }
-  .controls button {
-    padding: 12px;
-    font-size: 18px;
-    border-radius: 6px;
-    border:none;
-    background: rgba(0,0,0,0.4);
-    color:white;
-  }
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial;
+    color: white;
+}
+canvas {
+    background: #2e8b57;
+    border: 4px solid white;
+}
+#ui {
+    position: absolute;
+    top: 10px;
+    text-align: center;
+    width: 100%;
+}
 </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
-<div class="controls">
-  <button onclick="playerMove(-1)">◀</button>
-  <button onclick="playerJump()">▲</button>
-  <button onclick="playerMove(1)">▶</button>
+
+<div id="ui">
+❤️ Leben: <span id="lives">3</span> |
+🏆 Level: <span id="level">1</span>
 </div>
 
+<canvas id="game" width="700" height="450"></canvas>
+
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-// 🌴 Level Setup
-const gravity = 0.5;
-const player = { x:100, y:canvas.height-150, w:40, h:60, vy:0, onGround:false };
-let keys = {};
-const spikes = [];
-const platforms = [];
-const particles = [];
-let gameOver = false;
-let portal = { x:canvas.width-150, y:canvas.height-200, w:50, h:80 };
+let level = 1;
+let lives = 3;
 
-// ==== Tropical Jungle Background ====
-function drawBackground(){
-  // Himmel
-  ctx.fillStyle = '#87CEEB';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+const player = {
+    x: 50,
+    y: 200,
+    size: 25,
+    speed: 3,
+    color: "blue"
+};
 
-  // Sonne
-  ctx.fillStyle = '#FFD700';
-  ctx.beginPath();
-  ctx.arc(100,100,50,0,Math.PI*2);
-  ctx.fill();
+let goal = {
+    x: 650,
+    y: 200,
+    size: 30,
+    color: "gold"
+};
 
-  // Wasser
-  ctx.fillStyle = '#1E90FF';
-  ctx.fillRect(0,canvas.height-100,canvas.width,100);
+let obstacles = [];
+let enemies = [];
 
-  // Sand
-  ctx.fillStyle = '#EDC9AF';
-  ctx.fillRect(0,canvas.height-50,canvas.width,50);
+function generateLevel() {
+    obstacles = [];
+    enemies = [];
 
-  // Palmen
-  ctx.fillStyle = '#228B22';
-  for(let i=0;i<5;i++){
-    let px=i*200+50;
-    ctx.fillRect(px,canvas.height-300,20,150); // Stamm
-    ctx.beginPath();
-    ctx.moveTo(px-30,canvas.height-300);
-    ctx.lineTo(px+10,canvas.height-350);
-    ctx.lineTo(px+50,canvas.height-300);
-    ctx.fill();
-  }
+    // Hindernisse
+    for (let i = 0; i < level + 2; i++) {
+        obstacles.push({
+            x: Math.random() * 600 + 50,
+            y: Math.random() * 350,
+            width: 100,
+            height: 20
+        });
+    }
+
+    // Gegner
+    for (let i = 0; i < level; i++) {
+        enemies.push({
+            x: Math.random() * 600 + 50,
+            y: Math.random() * 350,
+            size: 25,
+            speed: 1 + level * 0.5,
+            dx: Math.random() < 0.5 ? 1 : -1,
+            dy: Math.random() < 0.5 ? 1 : -1
+        });
+    }
+
+    player.x = 50;
+    player.y = 200;
 }
 
-// ==== Platform & Spike Setup ====
-platforms.push({x:0, y:canvas.height-50, w:canvas.width, h:50, open:false});
-platforms.push({x:300, y:canvas.height-150, w:200, h:20, open:false});
-platforms.push({x:600, y:canvas.height-250, w:150, h:20, open:false});
+const keys = {};
 
-function spawnSpike(){
-  const x = Math.random()*(canvas.width-20);
-  spikes.push({x:x, y:-20, w:20, h:20, vy:2+Math.random()*3});
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+function collisionRect(a, b) {
+    return (
+        a.x < b.x + b.width &&
+        a.x + a.size > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.size > b.y
+    );
 }
 
-// ==== Particles ====
-function createParticles(x,y,color){
-  for(let i=0;i<20;i++){
-    particles.push({
-      x:x, y:y,
-      vx:(Math.random()-0.5)*5,
-      vy:(Math.random()-1.5)*5,
-      alpha:1,
-      color:color
+function collisionSquare(a, b) {
+    return (
+        a.x < b.x + b.size &&
+        a.x + a.size > b.x &&
+        a.y < b.y + b.size &&
+        a.y + a.size > b.y
+    );
+}
+
+function update() {
+
+    let newX = player.x;
+    let newY = player.y;
+
+    if (keys["arrowup"] || keys["w"]) newY -= player.speed;
+    if (keys["arrowdown"] || keys["s"]) newY += player.speed;
+    if (keys["arrowleft"] || keys["a"]) newX -= player.speed;
+    if (keys["arrowright"] || keys["d"]) newX += player.speed;
+
+    // Kollision mit Hindernissen
+    let future = {x:newX, y:player.y, size:player.size};
+    if (!obstacles.some(o => collisionRect(future,o))) player.x = newX;
+
+    future = {x:player.x, y:newY, size:player.size};
+    if (!obstacles.some(o => collisionRect(future,o))) player.y = newY;
+
+    // Spielfeld Begrenzung
+    player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+
+    // Gegner Bewegung
+    enemies.forEach(enemy => {
+        enemy.x += enemy.dx * enemy.speed;
+        enemy.y += enemy.dy * enemy.speed;
+
+        if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.size) enemy.dx *= -1;
+        if (enemy.y <= 0 || enemy.y >= canvas.height - enemy.size) enemy.dy *= -1;
+
+        if (collisionSquare(player, enemy)) {
+            lives--;
+            document.getElementById("lives").textContent = lives;
+            player.x = 50;
+            player.y = 200;
+
+            if (lives <= 0) {
+                alert("💀 Game Over!");
+                level = 1;
+                lives = 3;
+                document.getElementById("level").textContent = level;
+                document.getElementById("lives").textContent = lives;
+                generateLevel();
+            }
+        }
     });
-  }
+
+    // Ziel erreicht
+    if (collisionSquare(player, goal)) {
+        level++;
+        document.getElementById("level").textContent = level;
+        generateLevel();
+    }
 }
 
-// ==== Game Loop ====
-function update(){
-  if(gameOver){ drawGameOver(); return; }
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawBackground();
+    // Hindernisse
+    ctx.fillStyle = "brown";
+    obstacles.forEach(o => ctx.fillRect(o.x,o.y,o.width,o.height));
 
-  // Plattform zeichnen
-  ctx.fillStyle='#654321';
-  platforms.forEach(p=>{
-    if(!p.open) ctx.fillRect(p.x,p.y,p.w,p.h);
-  });
+    // Ziel
+    ctx.fillStyle = goal.color;
+    ctx.fillRect(goal.x,goal.y,goal.size,goal.size);
 
-  // Portal
-  ctx.fillStyle='purple';
-  ctx.fillRect(portal.x, portal.y, portal.w, portal.h);
+    // Gegner
+    ctx.fillStyle = "red";
+    enemies.forEach(e => ctx.fillRect(e.x,e.y,e.size,e.size));
 
-  // Spieler
-  player.vy += gravity;
-  player.y += player.vy;
-
-  // Kollision mit Plattformen
-  player.onGround = false;
-  platforms.forEach(p=>{
-    if(player.x+player.w>p.x && player.x<p.x+p.w &&
-       player.y+player.h>p.y && player.y+player.h< p.y+p.h+player.vy){
-         player.y = p.y - player.h;
-         player.vy = 0;
-         player.onGround = true;
-         // Zufällige Bodenöffnung
-         if(Math.random()<0.01) p.open=true;
-       }
-  });
-
-  // Spieler zeichnen
-  ctx.fillStyle='red';
-  ctx.fillRect(player.x,player.y,player.w,player.h);
-
-  // Spikes
-  if(Math.random()<0.02) spawnSpike();
-  spikes.forEach((s,i)=>{
-    s.y += s.vy;
-    ctx.fillStyle='black';
-    ctx.fillRect(s.x,s.y,s.w,s.h);
-    // Kollision Spieler
-    if(player.x+player.w>s.x && player.x<s.x+s.w &&
-       player.y+player.h>s.y && player.y<s.y+s.h){
-         createParticles(player.x+player.w/2, player.y+player.h/2,'red');
-         gameOver=true;
-       }
-    if(s.y>canvas.height) spikes.splice(i,1);
-  });
-
-  // Partikel
-  particles.forEach((p,i)=>{
-    ctx.fillStyle=p.color;
-    ctx.globalAlpha = p.alpha;
-    ctx.fillRect(p.x,p.y,5,5);
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.1;
-    p.alpha -=0.02;
-    if(p.alpha<=0) particles.splice(i,1);
-  });
-  ctx.globalAlpha=1;
-
-  // Portal Check
-  if(player.x+player.w>portal.x && player.x<portal.x+portal.w &&
-     player.y+player.h>portal.y && player.y<portal.y+portal.h){
-       drawWin();
-       return;
-     }
-
-  requestAnimationFrame(update);
-}
-function drawGameOver(){
-  ctx.fillStyle='rgba(0,0,0,0.5)';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='white';
-  ctx.font='50px sans-serif';
-  ctx.fillText('Game Over',canvas.width/2-150,canvas.height/2);
-}
-function drawWin(){
-  ctx.fillStyle='rgba(255,255,255,0.5)';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='green';
-  ctx.font='50px sans-serif';
-  ctx.fillText('Level Complete!',canvas.width/2-200,canvas.height/2);
+    // Spieler
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x,player.y,player.size,player.size);
 }
 
-// ==== Controls ====
-function playerMove(dir){
-  player.x += dir*5;
-  if(player.x<0) player.x=0;
-  if(player.x>canvas.width-player.w) player.x=canvas.width-player.w;
-}
-function playerJump(){
-  if(player.onGround) player.vy=-12;
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
 }
 
-// Start Game
-update();
+generateLevel();
+loop();
 </script>
+
 </body>
 </html>
