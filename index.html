@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Trop Adventure - Jungle Chaos</title>
+<title>Trop Adventure - Explosion Edition</title>
 <style>
 body { margin:0; overflow:hidden; background:#6ec6ff; }
 canvas { display:block; }
@@ -42,6 +42,7 @@ canvas.height = window.innerHeight;
 
 let gravity = 0.7;
 let keys = {left:false,right:false,jump:false};
+let particles = [];
 
 let player = {
 x:100,
@@ -57,17 +58,16 @@ let platforms = [
 {x:0,y:450,w:300,h:50},
 {x:350,y:400,w:200,h:20},
 {x:600,y:350,w:200,h:20},
-{x:900,y:420,w:200,h:20, moving:true, dir:1}
+{x:900,y:420,w:200,h:20}
 ];
 
-let spikes = [
-{x:320,y:430,dir:1},
-{x:550,y:380,dir:-1},
-{x:750,y:330,dir:1}
-];
-
-let enemy = {x:1000,y:390,w:30,h:30,speed:1.5};
-let portal = {x:1150,y:360,w:40,h:60};
+let enemy = {
+x:1000,
+y:380,
+radius:20,
+speed:1.5,
+angle:0
+};
 
 let water = {y:500};
 
@@ -77,11 +77,6 @@ ctx.fillRect(0,0,canvas.width,canvas.height);
 
 ctx.fillStyle="#00aaff";
 ctx.fillRect(0,water.y,canvas.width,200);
-
-ctx.fillStyle="yellow";
-ctx.beginPath();
-ctx.arc(100,100,50,0,Math.PI*2);
-ctx.fill();
 }
 
 function drawPlatforms(){
@@ -91,58 +86,84 @@ ctx.fillRect(p.x,p.y,p.w,p.h);
 });
 }
 
-function drawSpikes(){
-ctx.fillStyle="red";
-spikes.forEach(s=>{
-ctx.beginPath();
-ctx.moveTo(s.x,s.y);
-ctx.lineTo(s.x+10,s.y-20);
-ctx.lineTo(s.x+20,s.y);
-ctx.fill();
-});
-}
-
-function drawEnemy(){
-ctx.fillStyle="purple";
-ctx.fillRect(enemy.x,enemy.y,enemy.w,enemy.h);
-}
-
-function drawPortal(){
-ctx.fillStyle="gold";
-ctx.fillRect(portal.x,portal.y,portal.w,portal.h);
-}
-
 function drawPlayer(){
 ctx.fillStyle="black";
 ctx.fillRect(player.x,player.y,player.w,player.h);
 }
 
+function drawEnemy(){
+ctx.save();
+ctx.translate(enemy.x,enemy.y);
+ctx.rotate(enemy.angle);
+
+ctx.fillStyle="purple";
+ctx.beginPath();
+ctx.arc(0,0,enemy.radius,0,Math.PI*2);
+ctx.fill();
+
+ctx.strokeStyle="red";
+for(let i=0;i<10;i++){
+let a=i*(Math.PI*2/10);
+let x1=Math.cos(a)*enemy.radius;
+let y1=Math.sin(a)*enemy.radius;
+let x2=Math.cos(a)*(enemy.radius+10);
+let y2=Math.sin(a)*(enemy.radius+10);
+ctx.beginPath();
+ctx.moveTo(x1,y1);
+ctx.lineTo(x2,y2);
+ctx.stroke();
+}
+
+ctx.restore();
+}
+
+function createExplosion(x,y){
+for(let i=0;i<30;i++){
+particles.push({
+x:x,
+y:y,
+dx:(Math.random()-0.5)*6,
+dy:(Math.random()-0.5)*6,
+life:60
+});
+}
+}
+
+function drawParticles(){
+ctx.fillStyle="orange";
+particles.forEach(p=>{
+ctx.fillRect(p.x,p.y,4,4);
+});
+}
+
+function updateParticles(){
+particles.forEach(p=>{
+p.x+=p.dx;
+p.y+=p.dy;
+p.life--;
+});
+particles=particles.filter(p=>p.life>0);
+}
+
 function update(){
 
-player.dy += gravity;
+player.dy+=gravity;
 
 if(keys.left) player.dx=-5;
 else if(keys.right) player.dx=5;
 else player.dx=0;
 
-player.x += player.dx;
-player.y += player.dy;
+player.x+=player.dx;
+player.y+=player.dy;
 
 player.grounded=false;
 
 platforms.forEach(p=>{
-
-if(p.moving){
-p.x += 2*p.dir;
-if(p.x > 1000 || p.x < 850) p.dir *= -1;
-}
-
 if(player.x < p.x+p.w &&
 player.x+player.w > p.x &&
 player.y+player.h > p.y &&
 player.y+player.h < p.y+20){
-
-player.y = p.y-player.h;
+player.y=p.y-player.h;
 player.dy=0;
 player.grounded=true;
 }
@@ -152,37 +173,24 @@ if(keys.jump && player.grounded){
 player.dy=-14;
 }
 
-spikes.forEach(s=>{
-s.x += 2*s.dir;
-if(s.x > 800 || s.x < 250) s.dir*=-1;
+if(player.x < enemy.x) enemy.x-=enemy.speed;
+if(player.x > enemy.x) enemy.x+=enemy.speed;
 
-if(player.x < s.x+20 &&
-player.x+player.w > s.x &&
-player.y+player.h > s.y-20){
-reset();
-}
-});
+enemy.angle+=0.1;
 
-if(player.x < enemy.x) enemy.x -= enemy.speed;
-if(player.x > enemy.x) enemy.x += enemy.speed;
+let dx = player.x+player.w/2-enemy.x;
+let dy = player.y+player.h/2-enemy.y;
+let dist = Math.sqrt(dx*dx+dy*dy);
 
-if(player.x < enemy.x+enemy.w &&
-player.x+player.w > enemy.x &&
-player.y < enemy.y+enemy.h &&
-player.y+player.h > enemy.y){
+if(dist < enemy.radius+player.w/2){
+createExplosion(player.x,player.y);
 reset();
 }
 
-if(player.x < portal.x+portal.w &&
-player.x+player.w > portal.x &&
-player.y < portal.y+portal.h &&
-player.y+player.h > portal.y){
-alert("LEVEL COMPLETE 🌴🔥");
+if(player.y > water.y){
+createExplosion(player.x,player.y);
 reset();
 }
-
-if(player.y > water.y) reset();
-if(player.y > canvas.height) reset();
 }
 
 function reset(){
@@ -195,11 +203,11 @@ function loop(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 drawBackground();
 drawPlatforms();
-drawSpikes();
 drawEnemy();
-drawPortal();
 drawPlayer();
+drawParticles();
 update();
+updateParticles();
 requestAnimationFrame(loop);
 }
 
