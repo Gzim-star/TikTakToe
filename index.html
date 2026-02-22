@@ -6,11 +6,32 @@
 <style>
 body { margin:0; overflow:hidden; background:#6ec6ff; }
 canvas { display:block; }
+
+.button{
+position:fixed;
+bottom:20px;
+width:60px;
+height:60px;
+background:rgba(0,0,0,0.4);
+color:white;
+font-size:30px;
+text-align:center;
+line-height:60px;
+border-radius:50%;
+user-select:none;
+}
+#left{ left:20px; }
+#right{ left:100px; }
+#jump{ right:40px; }
 </style>
 </head>
 <body>
 
 <canvas id="game"></canvas>
+
+<div id="left" class="button">◀</div>
+<div id="right" class="button">▶</div>
+<div id="jump" class="button">▲</div>
 
 <script>
 const canvas = document.getElementById("game");
@@ -19,138 +40,108 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const gravity = 0.6;
-const friction = 0.8;
-
-let keys = {};
+let gravity = 0.7;
+let keys = {left:false,right:false,jump:false};
 
 let player = {
-    x: 100,
-    y: 300,
-    width: 30,
-    height: 30,
-    dx: 0,
-    dy: 0,
-    grounded: false
+x:100,
+y:300,
+w:30,
+h:30,
+dx:0,
+dy:0,
+grounded:false
 };
 
-let platforms = [
-    {x:0, y:400, width:canvas.width, height:50},
-    {x:300, y:320, width:120, height:20},
-    {x:500, y:260, width:120, height:20}
-];
-
-let spikes = [
-    {x:650, y:380, size:20},
-    {x:680, y:380, size:20}
-];
+let ground = {x:0,y:400,w:canvas.width,h:50};
+let spike = {x:600,y:380,size:20};
 
 function drawBackground(){
-    // Himmel
-    ctx.fillStyle = "#6ec6ff";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#6ec6ff";
+ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    // Sonne
-    ctx.fillStyle = "yellow";
-    ctx.beginPath();
-    ctx.arc(100,100,50,0,Math.PI*2);
-    ctx.fill();
+ctx.fillStyle="yellow";
+ctx.beginPath();
+ctx.arc(100,100,50,0,Math.PI*2);
+ctx.fill();
+}
 
-    // Palmen
-    for(let i=0;i<5;i++){
-        ctx.fillStyle = "#8b5a2b";
-        ctx.fillRect(150*i+50,350,20,80);
-        ctx.fillStyle = "green";
-        ctx.beginPath();
-        ctx.arc(150*i+60,340,40,0,Math.PI*2);
-        ctx.fill();
-    }
+function drawGround(){
+ctx.fillStyle="#228B22";
+ctx.fillRect(ground.x,ground.y,ground.w,ground.h);
+}
+
+function drawSpike(){
+ctx.fillStyle="red";
+ctx.beginPath();
+ctx.moveTo(spike.x,spike.y);
+ctx.lineTo(spike.x+10,spike.y-20);
+ctx.lineTo(spike.x+20,spike.y);
+ctx.fill();
 }
 
 function drawPlayer(){
-    ctx.fillStyle = "black";
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-}
-
-function drawPlatforms(){
-    ctx.fillStyle = "#228B22";
-    platforms.forEach(p=>{
-        ctx.fillRect(p.x,p.y,p.width,p.height);
-    });
-}
-
-function drawSpikes(){
-    ctx.fillStyle = "red";
-    spikes.forEach(s=>{
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(s.x+10, s.y-20);
-        ctx.lineTo(s.x+20, s.y);
-        ctx.fill();
-    });
+ctx.fillStyle="black";
+ctx.fillRect(player.x,player.y,player.w,player.h);
 }
 
 function update(){
-    player.dy += gravity;
+player.dy += gravity;
 
-    if(keys["ArrowRight"]) player.dx = 5;
-    else if(keys["ArrowLeft"]) player.dx = -5;
-    else player.dx *= friction;
+if(keys.left) player.dx = -5;
+else if(keys.right) player.dx = 5;
+else player.dx = 0;
 
-    player.x += player.dx;
-    player.y += player.dy;
+player.x += player.dx;
+player.y += player.dy;
 
-    player.grounded = false;
+player.grounded=false;
 
-    platforms.forEach(p=>{
-        if(player.x < p.x + p.width &&
-           player.x + player.width > p.x &&
-           player.y < p.y + p.height &&
-           player.y + player.height > p.y){
-
-            player.y = p.y - player.height;
-            player.dy = 0;
-            player.grounded = true;
-        }
-    });
-
-    if(player.grounded && keys[" "]){
-        player.dy = -12;
-    }
-
-    spikes.forEach(s=>{
-        if(player.x < s.x+20 &&
-           player.x + player.width > s.x &&
-           player.y + player.height > s.y-20){
-            resetPlayer();
-        }
-    });
-
-    if(player.y > canvas.height){
-        resetPlayer();
-    }
+if(player.y + player.h > ground.y){
+player.y = ground.y - player.h;
+player.dy = 0;
+player.grounded=true;
 }
 
-function resetPlayer(){
-    player.x = 100;
-    player.y = 300;
-    player.dy = 0;
+if(keys.jump && player.grounded){
+player.dy = -15;
 }
 
-function gameLoop(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    drawBackground();
-    drawPlatforms();
-    drawSpikes();
-    drawPlayer();
-    update();
-    requestAnimationFrame(gameLoop);
+if(player.x < spike.x+20 &&
+player.x+player.w > spike.x &&
+player.y+player.h > spike.y-20){
+reset();
 }
 
-window.addEventListener("keydown", e=> keys[e.key]=true);
-window.addEventListener("keyup", e=> keys[e.key]=false);
+if(player.y > canvas.height) reset();
+}
 
-gameLoop();
+function reset(){
+player.x=100;
+player.y=300;
+player.dy=0;
+}
+
+function loop(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+drawBackground();
+drawGround();
+drawSpike();
+drawPlayer();
+update();
+requestAnimationFrame(loop);
+}
+
+document.getElementById("left").ontouchstart=()=>keys.left=true;
+document.getElementById("left").ontouchend=()=>keys.left=false;
+
+document.getElementById("right").ontouchstart=()=>keys.right=true;
+document.getElementById("right").ontouchend=()=>keys.right=false;
+
+document.getElementById("jump").ontouchstart=()=>keys.jump=true;
+document.getElementById("jump").ontouchend=()=>keys.jump=false;
+
+loop();
 </script>
 
 </body>
