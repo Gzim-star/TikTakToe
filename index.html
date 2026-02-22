@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Trop Adventure</title>
+<title>Trop Adventure - Jungle Chaos</title>
 <style>
 body { margin:0; overflow:hidden; background:#6ec6ff; }
 canvas { display:block; }
@@ -53,23 +53,30 @@ dy:0,
 grounded:false
 };
 
-let ground = {x:0,y:400,w:canvas.width,h:50};
-
-// 🔥 Viele Spikes
-let spikes = [
-{x:300,y:380},
-{x:340,y:380},
-{x:500,y:380},
-{x:540,y:380},
-{x:580,y:380},
-{x:700,y:380},
-{x:740,y:380},
-{x:780,y:380}
+let platforms = [
+{x:0,y:450,w:300,h:50},
+{x:350,y:400,w:200,h:20},
+{x:600,y:350,w:200,h:20},
+{x:900,y:420,w:200,h:20, moving:true, dir:1}
 ];
+
+let spikes = [
+{x:320,y:430,dir:1},
+{x:550,y:380,dir:-1},
+{x:750,y:330,dir:1}
+];
+
+let enemy = {x:1000,y:390,w:30,h:30,speed:1.5};
+let portal = {x:1150,y:360,w:40,h:60};
+
+let water = {y:500};
 
 function drawBackground(){
 ctx.fillStyle="#6ec6ff";
 ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ctx.fillStyle="#00aaff";
+ctx.fillRect(0,water.y,canvas.width,200);
 
 ctx.fillStyle="yellow";
 ctx.beginPath();
@@ -77,9 +84,11 @@ ctx.arc(100,100,50,0,Math.PI*2);
 ctx.fill();
 }
 
-function drawGround(){
+function drawPlatforms(){
 ctx.fillStyle="#228B22";
-ctx.fillRect(ground.x,ground.y,ground.w,ground.h);
+platforms.forEach(p=>{
+ctx.fillRect(p.x,p.y,p.w,p.h);
+});
 }
 
 function drawSpikes(){
@@ -93,35 +102,60 @@ ctx.fill();
 });
 }
 
+function drawEnemy(){
+ctx.fillStyle="purple";
+ctx.fillRect(enemy.x,enemy.y,enemy.w,enemy.h);
+}
+
+function drawPortal(){
+ctx.fillStyle="gold";
+ctx.fillRect(portal.x,portal.y,portal.w,portal.h);
+}
+
 function drawPlayer(){
 ctx.fillStyle="black";
 ctx.fillRect(player.x,player.y,player.w,player.h);
 }
 
 function update(){
+
 player.dy += gravity;
 
-if(keys.left) player.dx = -5;
-else if(keys.right) player.dx = 5;
-else player.dx = 0;
+if(keys.left) player.dx=-5;
+else if(keys.right) player.dx=5;
+else player.dx=0;
 
 player.x += player.dx;
 player.y += player.dy;
 
 player.grounded=false;
 
-if(player.y + player.h > ground.y){
-player.y = ground.y - player.h;
-player.dy = 0;
+platforms.forEach(p=>{
+
+if(p.moving){
+p.x += 2*p.dir;
+if(p.x > 1000 || p.x < 850) p.dir *= -1;
+}
+
+if(player.x < p.x+p.w &&
+player.x+player.w > p.x &&
+player.y+player.h > p.y &&
+player.y+player.h < p.y+20){
+
+player.y = p.y-player.h;
+player.dy=0;
 player.grounded=true;
 }
+});
 
 if(keys.jump && player.grounded){
-player.dy = -15;
+player.dy=-14;
 }
 
-// 💀 Spike Collision
 spikes.forEach(s=>{
+s.x += 2*s.dir;
+if(s.x > 800 || s.x < 250) s.dir*=-1;
+
 if(player.x < s.x+20 &&
 player.x+player.w > s.x &&
 player.y+player.h > s.y-20){
@@ -129,6 +163,25 @@ reset();
 }
 });
 
+if(player.x < enemy.x) enemy.x -= enemy.speed;
+if(player.x > enemy.x) enemy.x += enemy.speed;
+
+if(player.x < enemy.x+enemy.w &&
+player.x+player.w > enemy.x &&
+player.y < enemy.y+enemy.h &&
+player.y+player.h > enemy.y){
+reset();
+}
+
+if(player.x < portal.x+portal.w &&
+player.x+player.w > portal.x &&
+player.y < portal.y+portal.h &&
+player.y+player.h > portal.y){
+alert("LEVEL COMPLETE 🌴🔥");
+reset();
+}
+
+if(player.y > water.y) reset();
 if(player.y > canvas.height) reset();
 }
 
@@ -141,8 +194,10 @@ player.dy=0;
 function loop(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 drawBackground();
-drawGround();
+drawPlatforms();
 drawSpikes();
+drawEnemy();
+drawPortal();
 drawPlayer();
 update();
 requestAnimationFrame(loop);
