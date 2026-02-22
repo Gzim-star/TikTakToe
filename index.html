@@ -1,277 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trop Adventure</title>
 <style>
-body { margin:0; overflow:hidden; background:#6ec6ff; }
-canvas { display:block; }
-
-.button{
-position:fixed;
-bottom:20px;
-width:60px;
-height:60px;
-background:rgba(0,0,0,0.4);
-color:white;
-font-size:30px;
-text-align:center;
-line-height:60px;
-border-radius:50%;
-user-select:none;
-}
-#left{ left:20px; }
-#right{ left:100px; }
-#jump{ right:40px; }
+  body { margin:0; overflow:hidden; background:#87CEEB; font-family:sans-serif; }
+  canvas { display:block; }
+  .controls {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+  }
+  .controls button {
+    padding: 12px;
+    font-size: 18px;
+    border-radius: 6px;
+    border:none;
+    background: rgba(0,0,0,0.4);
+    color:white;
+  }
 </style>
 </head>
 <body>
-
-<canvas id="game"></canvas>
-
-<div id="left" class="button">◀</div>
-<div id="right" class="button">▶</div>
-<div id="jump" class="button">▲</div>
+<canvas id="gameCanvas"></canvas>
+<div class="controls">
+  <button onclick="playerMove(-1)">◀</button>
+  <button onclick="playerJump()">▲</button>
+  <button onclick="playerMove(1)">▶</button>
+</div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let gravity = 0.7;
-let keys = {left:false,right:false,jump:false};
-let particles = [];
-let level = 1;
+// 🌴 Level Setup
+const gravity = 0.5;
+const player = { x:100, y:canvas.height-150, w:40, h:60, vy:0, onGround:false };
+let keys = {};
+const spikes = [];
+const platforms = [];
+const particles = [];
+let gameOver = false;
+let portal = { x:canvas.width-150, y:canvas.height-200, w:50, h:80 };
 
-let player = {x:100,y:300,w:30,h:30,dx:0,dy:0,grounded:false};
-
-let enemy = {x:900,y:380,radius:20,speed:1.5,angle:0};
-
-let portal = {x:1400,y:360,w:50,h:80};
-
-let spikes = [];
-let platforms = [];
-
-function loadLevel(){
-
-spikes = [
-{x:300,y:430},
-{x:340,y:430},
-{x:600,y:380},
-{x:640,y:380},
-{x:900,y:330}
-];
-
-platforms = [
-{x:0,y:450,w:300,h:50},
-{x:350,y:400,w:200,h:20},
-{x:600,y:350,w:200,h:20},
-{x:900,y:420,w:200,h:20},
-{x:1200,y:370,w:200,h:20}
-];
-
-portal.x = 1450;
-}
-
-loadLevel();
-
+// ==== Tropical Jungle Background ====
 function drawBackground(){
-ctx.fillStyle="#6ec6ff";
-ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Himmel
+  ctx.fillStyle = '#87CEEB';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
-// Sonne
-ctx.fillStyle="yellow";
-ctx.beginPath();
-ctx.arc(100,100,50,0,Math.PI*2);
-ctx.fill();
+  // Sonne
+  ctx.fillStyle = '#FFD700';
+  ctx.beginPath();
+  ctx.arc(100,100,50,0,Math.PI*2);
+  ctx.fill();
 
-// Wasser
-ctx.fillStyle="#00aaff";
-ctx.fillRect(0,500,canvas.width,200);
+  // Wasser
+  ctx.fillStyle = '#1E90FF';
+  ctx.fillRect(0,canvas.height-100,canvas.width,100);
+
+  // Sand
+  ctx.fillStyle = '#EDC9AF';
+  ctx.fillRect(0,canvas.height-50,canvas.width,50);
+
+  // Palmen
+  ctx.fillStyle = '#228B22';
+  for(let i=0;i<5;i++){
+    let px=i*200+50;
+    ctx.fillRect(px,canvas.height-300,20,150); // Stamm
+    ctx.beginPath();
+    ctx.moveTo(px-30,canvas.height-300);
+    ctx.lineTo(px+10,canvas.height-350);
+    ctx.lineTo(px+50,canvas.height-300);
+    ctx.fill();
+  }
 }
 
-function drawPlatforms(){
-ctx.fillStyle="#228B22";
-platforms.forEach(p=>{
-ctx.fillRect(p.x,p.y,p.w,p.h);
-});
+// ==== Platform & Spike Setup ====
+platforms.push({x:0, y:canvas.height-50, w:canvas.width, h:50, open:false});
+platforms.push({x:300, y:canvas.height-150, w:200, h:20, open:false});
+platforms.push({x:600, y:canvas.height-250, w:150, h:20, open:false});
+
+function spawnSpike(){
+  const x = Math.random()*(canvas.width-20);
+  spikes.push({x:x, y:-20, w:20, h:20, vy:2+Math.random()*3});
 }
 
-function drawSpikes(){
-ctx.fillStyle="red";
-spikes.forEach(s=>{
-ctx.beginPath();
-ctx.moveTo(s.x,s.y);
-ctx.lineTo(s.x+10,s.y-20);
-ctx.lineTo(s.x+20,s.y);
-ctx.fill();
-});
+// ==== Particles ====
+function createParticles(x,y,color){
+  for(let i=0;i<20;i++){
+    particles.push({
+      x:x, y:y,
+      vx:(Math.random()-0.5)*5,
+      vy:(Math.random()-1.5)*5,
+      alpha:1,
+      color:color
+    });
+  }
 }
 
-function drawPortal(){
-ctx.fillStyle="gold";
-ctx.fillRect(portal.x,portal.y,portal.w,portal.h);
-}
-
-function drawEnemy(){
-ctx.save();
-ctx.translate(enemy.x,enemy.y);
-ctx.rotate(enemy.angle);
-
-ctx.fillStyle="purple";
-ctx.beginPath();
-ctx.arc(0,0,enemy.radius,0,Math.PI*2);
-ctx.fill();
-
-ctx.strokeStyle="red";
-for(let i=0;i<10;i++){
-let a=i*(Math.PI*2/10);
-let x1=Math.cos(a)*enemy.radius;
-let y1=Math.sin(a)*enemy.radius;
-let x2=Math.cos(a)*(enemy.radius+10);
-let y2=Math.sin(a)*(enemy.radius+10);
-ctx.beginPath();
-ctx.moveTo(x1,y1);
-ctx.lineTo(x2,y2);
-ctx.stroke();
-}
-
-ctx.restore();
-}
-
-function drawPlayer(){
-ctx.fillStyle="black";
-ctx.fillRect(player.x,player.y,player.w,player.h);
-}
-
-function createExplosion(x,y){
-for(let i=0;i<30;i++){
-particles.push({
-x:x,
-y:y,
-dx:(Math.random()-0.5)*6,
-dy:(Math.random()-0.5)*6,
-life:60
-});
-}
-}
-
-function drawParticles(){
-ctx.fillStyle="orange";
-particles.forEach(p=>{
-ctx.fillRect(p.x,p.y,4,4);
-});
-}
-
-function updateParticles(){
-particles.forEach(p=>{
-p.x+=p.dx;
-p.y+=p.dy;
-p.life--;
-});
-particles=particles.filter(p=>p.life>0);
-}
-
-function reset(){
-createExplosion(player.x,player.y);
-player.x=100;
-player.y=300;
-player.dy=0;
-}
-
-function nextLevel(){
-level++;
-alert("Level "+level+" 🌴🔥");
-loadLevel();
-player.x=100;
-}
-
+// ==== Game Loop ====
 function update(){
+  if(gameOver){ drawGameOver(); return; }
 
-player.dy+=gravity;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawBackground();
 
-if(keys.left) player.dx=-5;
-else if(keys.right) player.dx=5;
-else player.dx=0;
+  // Plattform zeichnen
+  ctx.fillStyle='#654321';
+  platforms.forEach(p=>{
+    if(!p.open) ctx.fillRect(p.x,p.y,p.w,p.h);
+  });
 
-player.x+=player.dx;
-player.y+=player.dy;
+  // Portal
+  ctx.fillStyle='purple';
+  ctx.fillRect(portal.x, portal.y, portal.w, portal.h);
 
-player.grounded=false;
+  // Spieler
+  player.vy += gravity;
+  player.y += player.vy;
 
-platforms.forEach(p=>{
-if(player.x < p.x+p.w &&
-player.x+player.w > p.x &&
-player.y+player.h > p.y &&
-player.y+player.h < p.y+20){
-player.y=p.y-player.h;
-player.dy=0;
-player.grounded=true;
+  // Kollision mit Plattformen
+  player.onGround = false;
+  platforms.forEach(p=>{
+    if(player.x+player.w>p.x && player.x<p.x+p.w &&
+       player.y+player.h>p.y && player.y+player.h< p.y+p.h+player.vy){
+         player.y = p.y - player.h;
+         player.vy = 0;
+         player.onGround = true;
+         // Zufällige Bodenöffnung
+         if(Math.random()<0.01) p.open=true;
+       }
+  });
+
+  // Spieler zeichnen
+  ctx.fillStyle='red';
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+
+  // Spikes
+  if(Math.random()<0.02) spawnSpike();
+  spikes.forEach((s,i)=>{
+    s.y += s.vy;
+    ctx.fillStyle='black';
+    ctx.fillRect(s.x,s.y,s.w,s.h);
+    // Kollision Spieler
+    if(player.x+player.w>s.x && player.x<s.x+s.w &&
+       player.y+player.h>s.y && player.y<s.y+s.h){
+         createParticles(player.x+player.w/2, player.y+player.h/2,'red');
+         gameOver=true;
+       }
+    if(s.y>canvas.height) spikes.splice(i,1);
+  });
+
+  // Partikel
+  particles.forEach((p,i)=>{
+    ctx.fillStyle=p.color;
+    ctx.globalAlpha = p.alpha;
+    ctx.fillRect(p.x,p.y,5,5);
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.alpha -=0.02;
+    if(p.alpha<=0) particles.splice(i,1);
+  });
+  ctx.globalAlpha=1;
+
+  // Portal Check
+  if(player.x+player.w>portal.x && player.x<portal.x+portal.w &&
+     player.y+player.h>portal.y && player.y<portal.y+portal.h){
+       drawWin();
+       return;
+     }
+
+  requestAnimationFrame(update);
 }
-});
-
-if(keys.jump && player.grounded){
-player.dy=-14;
+function drawGameOver(){
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='white';
+  ctx.font='50px sans-serif';
+  ctx.fillText('Game Over',canvas.width/2-150,canvas.height/2);
+}
+function drawWin(){
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='green';
+  ctx.font='50px sans-serif';
+  ctx.fillText('Level Complete!',canvas.width/2-200,canvas.height/2);
 }
 
-// Spikes
-spikes.forEach(s=>{
-if(player.x < s.x+20 &&
-player.x+player.w > s.x &&
-player.y+player.h > s.y-20){
-reset();
+// ==== Controls ====
+function playerMove(dir){
+  player.x += dir*5;
+  if(player.x<0) player.x=0;
+  if(player.x>canvas.width-player.w) player.x=canvas.width-player.w;
 }
-});
-
-// Enemy verfolgt
-if(player.x < enemy.x) enemy.x-=enemy.speed;
-if(player.x > enemy.x) enemy.x+=enemy.speed;
-enemy.angle+=0.1;
-
-let dx = player.x+player.w/2-enemy.x;
-let dy = player.y+player.h/2-enemy.y;
-let dist = Math.sqrt(dx*dx+dy*dy);
-if(dist < enemy.radius+player.w/2){
-reset();
+function playerJump(){
+  if(player.onGround) player.vy=-12;
 }
 
-// Wasser
-if(player.y>500) reset();
-
-// Portal
-if(player.x < portal.x+portal.w &&
-player.x+player.w > portal.x &&
-player.y < portal.y+portal.h &&
-player.y+player.h > portal.y){
-nextLevel();
-}
-}
-
-function loop(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
-drawBackground();
-drawPlatforms();
-drawSpikes();
-drawPortal();
-drawEnemy();
-drawPlayer();
-drawParticles();
+// Start Game
 update();
-updateParticles();
-requestAnimationFrame(loop);
-}
-
-document.getElementById("left").ontouchstart=()=>keys.left=true;
-document.getElementById("left").ontouchend=()=>keys.left=false;
-document.getElementById("right").ontouchstart=()=>keys.right=true;
-document.getElementById("right").ontouchend=()=>keys.right=false;
-document.getElementById("jump").ontouchstart=()=>keys.jump=true;
-document.getElementById("jump").ontouchend=()=>keys.jump=false;
-
-loop();
 </script>
-
 </body>
 </html>
