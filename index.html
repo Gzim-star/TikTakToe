@@ -1,202 +1,317 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Adventure Game Pro</title>
+<title>Tic-Tac-Toe Player vs AI</title>
+
 <style>
-body {
-    margin: 0;
-    background: #111;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-family: Arial;
-    color: white;
+html, body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  background: #000000;
+  overflow: hidden;
 }
-canvas {
-    background: #2e8b57;
-    border: 4px solid white;
+
+#gameContainer { text-align: center; }
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(3, 150px);
+  grid-template-rows: repeat(3, 150px);
+  gap: 10px;
+  margin: 0 auto;
 }
-#ui {
-    position: absolute;
-    top: 10px;
-    text-align: center;
-    width: 100%;
+
+.cell {
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72px;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: white;
+  font-weight: bold;
+  border-radius: 12px;
+}
+
+.cell:hover { transform: scale(1.05); filter: brightness(1.2); }
+.highlight { background: #ffe082 !important; color: #000 !important; }
+
+#timer {
+  margin-top: 10px;
+  font-size: 22px;
+}
+
+.timer-green { color: #4caf50; }
+.timer-yellow { color: #ffeb3b; }
+.timer-red { color: #f44336; animation: pulse 1s infinite; }
+
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+#message, #scoreboard, #level { margin-top: 10px; color: white; }
+
+button {
+  padding: 12px 25px;
+  margin-top: 20px;
+  font-size: 18px;
+  background: #fff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+@media (max-width: 600px) {
+  #board { grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); }
+  .cell { width: 100px; height: 100px; font-size: 48px; }
 }
 </style>
 </head>
-<body>
 
-<div id="ui">
-❤️ Leben: <span id="lives">3</span> |
-🏆 Level: <span id="level">1</span>
+<body>
+<div id="gameContainer">
+  <div id="board"></div>
+  <div id="timer">⏳ Time left: 6</div>
+  <div id="message"></div>
+  <div id="scoreboard">Player: 0 | AI: 0 | Draws: 0</div>
+
+  <div id="level">
+    Level:
+    <select id="levelSelect">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+
+  <button onclick="resetGame()">RESTART©️</button>
 </div>
 
-<canvas id="game" width="700" height="450"></canvas>
+<audio id="soundClick" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
+<audio id="soundWin" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+// 🔒 Tic-Tac-Toe Original by Gëzim Hasani
+const gameID = "2025-GH-TTT01"; // eindeutige ID für dein Spiel
+const gameVersion = "1.0.0";
+const creationDate = "2025-12-14";
 
-let level = 1;
-let lives = 3;
+let board = ['', '', '', '', '', '', '', '', ''];
+let gameOver = false;
+let scores = { player: 0, ai: 0, draw: 0 };
 
-const player = {
-    x: 50,
-    y: 200,
-    size: 25,
-    speed: 3,
-    color: "blue"
-};
+let timer = 6;
+let timerInterval;
 
-let goal = {
-    x: 650,
-    y: 200,
-    size: 30,
-    color: "gold"
-};
+const boardDiv = document.getElementById('board');
+const timerDiv = document.getElementById('timer');
+const messageDiv = document.getElementById('message');
+const scoreboardDiv = document.getElementById('scoreboard');
+const soundClick = document.getElementById('soundClick');
+const soundWin = document.getElementById('soundWin');
+const levelSelect = document.getElementById('levelSelect');
 
-let obstacles = [];
-let enemies = [];
+function randomColor() {
+  const colors = ["#e57373","#f06292","#ba68c8","#9575cd","#7986cb","#64b5f6","#4dd0e1","#4db6ac","#81c784","#aed581","#fff176","#ffd54f","#ffb74d","#ff8a65"];
+  return colors[Math.floor(Math.random()*colors.length)];
+}
 
-function generateLevel() {
-    obstacles = [];
-    enemies = [];
+/* ⏳ TIMER WITH STRESS */
+function startTimer() {
+  clearInterval(timerInterval);
+  timer = 6;
+  updateTimerUI();
 
-    // Hindernisse
-    for (let i = 0; i < level + 2; i++) {
-        obstacles.push({
-            x: Math.random() * 600 + 50,
-            y: Math.random() * 350,
-            width: 100,
-            height: 20
-        });
+  timerInterval = setInterval(() => {
+    timer--;
+    updateTimerUI();
+
+    if (timer === 0) {
+      clearInterval(timerInterval);
+      aiMove();
     }
+  }, 1000);
+}
 
-    // Gegner
-    for (let i = 0; i < level; i++) {
-        enemies.push({
-            x: Math.random() * 600 + 50,
-            y: Math.random() * 350,
-            size: 25,
-            speed: 1 + level * 0.5,
-            dx: Math.random() < 0.5 ? 1 : -1,
-            dy: Math.random() < 0.5 ? 1 : -1
-        });
+function updateTimerUI() {
+  timerDiv.textContent = `⏳ Time left: ${timer}`;
+  timerDiv.className = '';
+
+  if (timer >= 4) timerDiv.classList.add('timer-green');
+  else if (timer >= 2) timerDiv.classList.add('timer-yellow');
+  else timerDiv.classList.add('timer-red');
+}
+
+function renderBoard() {
+  boardDiv.innerHTML = '';
+  board.forEach((cell, index) => {
+    const div = document.createElement('div');
+    div.className = 'cell';
+    div.textContent = cell;
+    if (cell === '') div.style.backgroundColor = randomColor();
+    div.onclick = () => playerMove(index);
+    boardDiv.appendChild(div);
+  });
+}
+
+function checkWinner(p) {
+  const wins = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  return wins.some(w => w.every(i => board[i] === p));
+}
+
+function playerMove(index) {
+  if (board[index] !== '' || gameOver) return;
+  board[index] = 'X';
+  soundClick.play();
+  clearInterval(timerInterval);
+  renderBoard();
+
+  if (checkWinner('X')) {
+    gameOver = true;
+    scores.player++;
+    messageDiv.textContent = "You win! 🎉";
+    soundWin.play();
+    updateScore();
+    return;
+  }
+
+  if (board.every(c => c !== '')) {
+    gameOver = true;
+    scores.draw++;
+    messageDiv.textContent = "It's a draw! 🤝";
+    updateScore();
+    return;
+  }
+
+  setTimeout(aiMove, 400);
+}
+
+function aiMove() {
+  if (gameOver) return;
+
+  let move;
+  if (levelSelect.value === 'easy') move = randomMove();
+  else if (levelSelect.value === 'medium') move = mediumMove();
+  else move = hardMove();
+
+  board[move] = 'O';
+  renderBoard();
+
+  if (checkWinner('O')) {
+    gameOver = true;
+    scores.ai++;
+    messageDiv.textContent = "AI wins! 🤖";
+    soundWin.play();
+    updateScore();
+    return;
+  }
+
+  if (board.every(c => c !== '')) {
+    gameOver = true;
+    scores.draw++;
+    messageDiv.textContent = "It's a draw! 🤝";
+    updateScore();
+    return;
+  }
+
+  startTimer();
+}
+
+function randomMove() {
+  const empty = board.map((v,i)=>v===''?i:null).filter(v=>v!==null);
+  return empty[Math.floor(Math.random()*empty.length)];
+}
+
+function mediumMove() {
+  for (let i=0;i<9;i++) {
+    if (board[i]==='') {
+      board[i]='O';
+      if (checkWinner('O')) return i;
+      board[i]='';
     }
-
-    player.x = 50;
-    player.y = 200;
-}
-
-const keys = {};
-
-document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-
-function collisionRect(a, b) {
-    return (
-        a.x < b.x + b.width &&
-        a.x + a.size > b.x &&
-        a.y < b.y + b.height &&
-        a.y + a.size > b.y
-    );
-}
-
-function collisionSquare(a, b) {
-    return (
-        a.x < b.x + b.size &&
-        a.x + a.size > b.x &&
-        a.y < b.y + b.size &&
-        a.y + a.size > b.y
-    );
-}
-
-function update() {
-
-    let newX = player.x;
-    let newY = player.y;
-
-    if (keys["arrowup"] || keys["w"]) newY -= player.speed;
-    if (keys["arrowdown"] || keys["s"]) newY += player.speed;
-    if (keys["arrowleft"] || keys["a"]) newX -= player.speed;
-    if (keys["arrowright"] || keys["d"]) newX += player.speed;
-
-    // Kollision mit Hindernissen
-    let future = {x:newX, y:player.y, size:player.size};
-    if (!obstacles.some(o => collisionRect(future,o))) player.x = newX;
-
-    future = {x:player.x, y:newY, size:player.size};
-    if (!obstacles.some(o => collisionRect(future,o))) player.y = newY;
-
-    // Spielfeld Begrenzung
-    player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
-    player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
-
-    // Gegner Bewegung
-    enemies.forEach(enemy => {
-        enemy.x += enemy.dx * enemy.speed;
-        enemy.y += enemy.dy * enemy.speed;
-
-        if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.size) enemy.dx *= -1;
-        if (enemy.y <= 0 || enemy.y >= canvas.height - enemy.size) enemy.dy *= -1;
-
-        if (collisionSquare(player, enemy)) {
-            lives--;
-            document.getElementById("lives").textContent = lives;
-            player.x = 50;
-            player.y = 200;
-
-            if (lives <= 0) {
-                alert("💀 Game Over!");
-                level = 1;
-                lives = 3;
-                document.getElementById("level").textContent = level;
-                document.getElementById("lives").textContent = lives;
-                generateLevel();
-            }
-        }
-    });
-
-    // Ziel erreicht
-    if (collisionSquare(player, goal)) {
-        level++;
-        document.getElementById("level").textContent = level;
-        generateLevel();
+  }
+  for (let i=0;i<9;i++) {
+    if (board[i]==='') {
+      board[i]='X';
+      if (checkWinner('X')) { board[i]=''; return i; }
+      board[i]='';
     }
+  }
+  if (board[4]==='') return 4;
+  const corners=[0,2,6,8].filter(i=>board[i]==='');
+  if (corners.length) return corners[Math.floor(Math.random()*corners.length)];
+  return randomMove();
 }
 
-function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // Hindernisse
-    ctx.fillStyle = "brown";
-    obstacles.forEach(o => ctx.fillRect(o.x,o.y,o.width,o.height));
-
-    // Ziel
-    ctx.fillStyle = goal.color;
-    ctx.fillRect(goal.x,goal.y,goal.size,goal.size);
-
-    // Gegner
-    ctx.fillStyle = "red";
-    enemies.forEach(e => ctx.fillRect(e.x,e.y,e.size,e.size));
-
-    // Spieler
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x,player.y,player.size,player.size);
+function hardMove() {
+  let bestScore = -Infinity;
+  let move;
+  for (let i=0;i<9;i++) {
+    if (board[i]==='') {
+      board[i]='O';
+      let score = minimax(board, 0, false);
+      board[i]='';
+      if (score > bestScore) {
+        bestScore = score;
+        move = i;
+      }
+    }
+  }
+  return move;
 }
 
-function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
+function minimax(b, depth, isMax) {
+  if (checkWinner('O')) return 10 - depth;
+  if (checkWinner('X')) return depth - 10;
+  if (b.every(c => c !== '')) return 0;
+
+  if (isMax) {
+    let best = -Infinity;
+    for (let i=0;i<9;i++) {
+      if (b[i]==='') {
+        b[i]='O';
+        best = Math.max(best, minimax(b, depth+1, false));
+        b[i]='';
+      }
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (let i=0;i<9;i++) {
+      if (b[i]==='') {
+        b[i]='X';
+        best = Math.min(best, minimax(b, depth+1, true));
+        b[i]='';
+      }
+    }
+    return best;
+  }
 }
 
-generateLevel();
-loop();
+function updateScore() {
+  scoreboardDiv.textContent =
+    `Player: ${scores.player} | AI: ${scores.ai} | Draws: ${scores.draw}`;
+}
+
+function resetGame() {
+  board=['','','','','','','','',''];
+  gameOver=false;
+  messageDiv.textContent='';
+  renderBoard();
+  startTimer();
+}
+
+renderBoard();
+startTimer();
 </script>
-
 </body>
 </html>
