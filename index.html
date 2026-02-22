@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Trop Adventure - Explosion Edition</title>
+<title>Trop Adventure</title>
 <style>
 body { margin:0; overflow:hidden; background:#6ec6ff; }
 canvas { display:block; }
@@ -43,40 +43,53 @@ canvas.height = window.innerHeight;
 let gravity = 0.7;
 let keys = {left:false,right:false,jump:false};
 let particles = [];
+let level = 1;
 
-let player = {
-x:100,
-y:300,
-w:30,
-h:30,
-dx:0,
-dy:0,
-grounded:false
-};
+let player = {x:100,y:300,w:30,h:30,dx:0,dy:0,grounded:false};
 
-let platforms = [
+let enemy = {x:900,y:380,radius:20,speed:1.5,angle:0};
+
+let portal = {x:1400,y:360,w:50,h:80};
+
+let spikes = [];
+let platforms = [];
+
+function loadLevel(){
+
+spikes = [
+{x:300,y:430},
+{x:340,y:430},
+{x:600,y:380},
+{x:640,y:380},
+{x:900,y:330}
+];
+
+platforms = [
 {x:0,y:450,w:300,h:50},
 {x:350,y:400,w:200,h:20},
 {x:600,y:350,w:200,h:20},
-{x:900,y:420,w:200,h:20}
+{x:900,y:420,w:200,h:20},
+{x:1200,y:370,w:200,h:20}
 ];
 
-let enemy = {
-x:1000,
-y:380,
-radius:20,
-speed:1.5,
-angle:0
-};
+portal.x = 1450;
+}
 
-let water = {y:500};
+loadLevel();
 
 function drawBackground(){
 ctx.fillStyle="#6ec6ff";
 ctx.fillRect(0,0,canvas.width,canvas.height);
 
+// Sonne
+ctx.fillStyle="yellow";
+ctx.beginPath();
+ctx.arc(100,100,50,0,Math.PI*2);
+ctx.fill();
+
+// Wasser
 ctx.fillStyle="#00aaff";
-ctx.fillRect(0,water.y,canvas.width,200);
+ctx.fillRect(0,500,canvas.width,200);
 }
 
 function drawPlatforms(){
@@ -86,9 +99,20 @@ ctx.fillRect(p.x,p.y,p.w,p.h);
 });
 }
 
-function drawPlayer(){
-ctx.fillStyle="black";
-ctx.fillRect(player.x,player.y,player.w,player.h);
+function drawSpikes(){
+ctx.fillStyle="red";
+spikes.forEach(s=>{
+ctx.beginPath();
+ctx.moveTo(s.x,s.y);
+ctx.lineTo(s.x+10,s.y-20);
+ctx.lineTo(s.x+20,s.y);
+ctx.fill();
+});
+}
+
+function drawPortal(){
+ctx.fillStyle="gold";
+ctx.fillRect(portal.x,portal.y,portal.w,portal.h);
 }
 
 function drawEnemy(){
@@ -115,6 +139,11 @@ ctx.stroke();
 }
 
 ctx.restore();
+}
+
+function drawPlayer(){
+ctx.fillStyle="black";
+ctx.fillRect(player.x,player.y,player.w,player.h);
 }
 
 function createExplosion(x,y){
@@ -145,6 +174,20 @@ p.life--;
 particles=particles.filter(p=>p.life>0);
 }
 
+function reset(){
+createExplosion(player.x,player.y);
+player.x=100;
+player.y=300;
+player.dy=0;
+}
+
+function nextLevel(){
+level++;
+alert("Level "+level+" 🌴🔥");
+loadLevel();
+player.x=100;
+}
+
 function update(){
 
 player.dy+=gravity;
@@ -173,36 +216,45 @@ if(keys.jump && player.grounded){
 player.dy=-14;
 }
 
+// Spikes
+spikes.forEach(s=>{
+if(player.x < s.x+20 &&
+player.x+player.w > s.x &&
+player.y+player.h > s.y-20){
+reset();
+}
+});
+
+// Enemy verfolgt
 if(player.x < enemy.x) enemy.x-=enemy.speed;
 if(player.x > enemy.x) enemy.x+=enemy.speed;
-
 enemy.angle+=0.1;
 
 let dx = player.x+player.w/2-enemy.x;
 let dy = player.y+player.h/2-enemy.y;
 let dist = Math.sqrt(dx*dx+dy*dy);
-
 if(dist < enemy.radius+player.w/2){
-createExplosion(player.x,player.y);
 reset();
 }
 
-if(player.y > water.y){
-createExplosion(player.x,player.y);
-reset();
-}
-}
+// Wasser
+if(player.y>500) reset();
 
-function reset(){
-player.x=100;
-player.y=300;
-player.dy=0;
+// Portal
+if(player.x < portal.x+portal.w &&
+player.x+player.w > portal.x &&
+player.y < portal.y+portal.h &&
+player.y+player.h > portal.y){
+nextLevel();
+}
 }
 
 function loop(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 drawBackground();
 drawPlatforms();
+drawSpikes();
+drawPortal();
 drawEnemy();
 drawPlayer();
 drawParticles();
@@ -213,10 +265,8 @@ requestAnimationFrame(loop);
 
 document.getElementById("left").ontouchstart=()=>keys.left=true;
 document.getElementById("left").ontouchend=()=>keys.left=false;
-
 document.getElementById("right").ontouchstart=()=>keys.right=true;
 document.getElementById("right").ontouchend=()=>keys.right=false;
-
 document.getElementById("jump").ontouchstart=()=>keys.jump=true;
 document.getElementById("jump").ontouchend=()=>keys.jump=false;
 
