@@ -54,7 +54,18 @@ grounded:false
 };
 
 let ground = {x:0,y:400,w:canvas.width,h:50};
-let spike = {x:600,y:380,size:20};
+
+// 🔥 Viele Spikes
+let spikes = [
+{x:300,y:380},
+{x:340,y:380},
+{x:500,y:380},
+{x:540,y:380},
+{x:580,y:380},
+{x:700,y:380},
+{x:740,y:380},
+{x:780,y:380}
+];
 
 function drawBackground(){
 ctx.fillStyle="#6ec6ff";
@@ -71,13 +82,15 @@ ctx.fillStyle="#228B22";
 ctx.fillRect(ground.x,ground.y,ground.w,ground.h);
 }
 
-function drawSpike(){
+function drawSpikes(){
 ctx.fillStyle="red";
+spikes.forEach(s=>{
 ctx.beginPath();
-ctx.moveTo(spike.x,spike.y);
-ctx.lineTo(spike.x+10,spike.y-20);
-ctx.lineTo(spike.x+20,spike.y);
+ctx.moveTo(s.x,s.y);
+ctx.lineTo(s.x+10,s.y-20);
+ctx.lineTo(s.x+20,s.y);
 ctx.fill();
+});
 }
 
 function drawPlayer(){
@@ -107,11 +120,14 @@ if(keys.jump && player.grounded){
 player.dy = -15;
 }
 
-if(player.x < spike.x+20 &&
-player.x+player.w > spike.x &&
-player.y+player.h > spike.y-20){
+// 💀 Spike Collision
+spikes.forEach(s=>{
+if(player.x < s.x+20 &&
+player.x+player.w > s.x &&
+player.y+player.h > s.y-20){
 reset();
 }
+});
 
 if(player.y > canvas.height) reset();
 }
@@ -126,7 +142,7 @@ function loop(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 drawBackground();
 drawGround();
-drawSpike();
+drawSpikes();
 drawPlayer();
 update();
 requestAnimationFrame(loop);
