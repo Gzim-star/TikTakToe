@@ -1,125 +1,157 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Desert Camel Detailed Animation</title>
+<title>Trop Adventure</title>
 <style>
-body { margin:0; overflow:hidden; background:#87CEEB; }
-canvas { display:block; background:#87CEEB; }
+body { margin:0; overflow:hidden; background:#6ec6ff; }
+canvas { display:block; }
 </style>
 </head>
 <body>
-<canvas id="desertCanvas"></canvas>
+
+<canvas id="game"></canvas>
+
 <script>
-// ==== CANVAS SETUP ====
-const canvas = document.getElementById('desertCanvas');
-const ctx = canvas.getContext('2d');
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// ==== VARIABLES ====
-let camelX = canvas.width/2;
-let camelY = canvas.height/2 + 50;
-let legPhase = 0;
-let headPhase = 0;
+const gravity = 0.6;
+const friction = 0.8;
 
-// ==== SUN ====
-function drawSun(){
-  const pulse = Math.sin(Date.now()*0.002)*10;
-  ctx.fillStyle = '#FFD700';
-  ctx.beginPath();
-  ctx.arc(100, 100, 50 + pulse, 0, Math.PI*2);
-  ctx.fill();
+let keys = {};
+
+let player = {
+    x: 100,
+    y: 300,
+    width: 30,
+    height: 30,
+    dx: 0,
+    dy: 0,
+    grounded: false
+};
+
+let platforms = [
+    {x:0, y:400, width:canvas.width, height:50},
+    {x:300, y:320, width:120, height:20},
+    {x:500, y:260, width:120, height:20}
+];
+
+let spikes = [
+    {x:650, y:380, size:20},
+    {x:680, y:380, size:20}
+];
+
+function drawBackground(){
+    // Himmel
+    ctx.fillStyle = "#6ec6ff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Sonne
+    ctx.fillStyle = "yellow";
+    ctx.beginPath();
+    ctx.arc(100,100,50,0,Math.PI*2);
+    ctx.fill();
+
+    // Palmen
+    for(let i=0;i<5;i++){
+        ctx.fillStyle = "#8b5a2b";
+        ctx.fillRect(150*i+50,350,20,80);
+        ctx.fillStyle = "green";
+        ctx.beginPath();
+        ctx.arc(150*i+60,340,40,0,Math.PI*2);
+        ctx.fill();
+    }
 }
 
-// ==== DUNES ====
-function drawDunes(){
-  ctx.fillStyle = '#DEB887';
-  ctx.beginPath();
-  ctx.moveTo(0, canvas.height/2 + 50);
-  ctx.quadraticCurveTo(canvas.width/4, canvas.height/2, canvas.width/2, canvas.height/2+50);
-  ctx.quadraticCurveTo(canvas.width*3/4, canvas.height/2+100, canvas.width, canvas.height/2+50);
-  ctx.lineTo(canvas.width, canvas.height);
-  ctx.lineTo(0, canvas.height);
-  ctx.closePath();
-  ctx.fill();
+function drawPlayer(){
+    ctx.fillStyle = "black";
+    ctx.fillRect(player.x, player.y, player.width, player.height);
 }
 
-// ==== WATER ====
-function drawWater(){
-  const wave = Math.sin(Date.now()*0.005)*5;
-  ctx.fillStyle = '#00BFFF';
-  ctx.beginPath();
-  ctx.ellipse(canvas.width*0.8, canvas.height/2 + 70 + wave, 60, 20, 0, 0, Math.PI*2);
-  ctx.fill();
+function drawPlatforms(){
+    ctx.fillStyle = "#228B22";
+    platforms.forEach(p=>{
+        ctx.fillRect(p.x,p.y,p.width,p.height);
+    });
 }
 
-// ==== GROUND / SAND ====
-function drawSand(){
-  ctx.fillStyle = '#EDC9AF';
-  ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+function drawSpikes(){
+    ctx.fillStyle = "red";
+    spikes.forEach(s=>{
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(s.x+10, s.y-20);
+        ctx.lineTo(s.x+20, s.y);
+        ctx.fill();
+    });
 }
 
-// ==== CAMEL BODY PARTS ====
-function drawCamel(x, y, legPhase, headPhase){
-  // Beine Animation (separate Phasen)
-  const legOffset1 = Math.sin(legPhase)*10;
-  const legOffset2 = Math.cos(legPhase)*10;
-  
-  // Beine
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x-20, y+30+legOffset1, 10, 30); // hinten links
-  ctx.fillRect(x+10, y+30-legOffset2, 10, 30); // hinten rechts
-  ctx.fillRect(x+40, y+30+legOffset2, 10, 30); // vorne links
-  ctx.fillRect(x+70, y+30-legOffset1, 10, 30); // vorne rechts
+function update(){
+    player.dy += gravity;
 
-  // Körper
-  ctx.fillStyle = '#A0522D';
-  ctx.fillRect(x, y, 80, 40);
+    if(keys["ArrowRight"]) player.dx = 5;
+    else if(keys["ArrowLeft"]) player.dx = -5;
+    else player.dx *= friction;
 
-  // Höcker
-  ctx.fillStyle = '#D2691E';
-  ctx.fillRect(x+20, y-20, 40, 20);
+    player.x += player.dx;
+    player.y += player.dy;
 
-  // Hals Bewegung
-  const neckOffset = Math.sin(headPhase)*5;
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+70, y-30+neckOffset, 10, 30);
+    player.grounded = false;
 
-  // Kopf Bewegung
-  const headOffset = Math.sin(headPhase*1.5)*5;
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(x+70, y-40+headOffset, 20, 20);
+    platforms.forEach(p=>{
+        if(player.x < p.x + p.width &&
+           player.x + player.width > p.x &&
+           player.y < p.y + p.height &&
+           player.y + player.height > p.y){
 
-  // Augen
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.arc(x+85, y-35+headOffset, 3, 0, Math.PI*2);
-  ctx.fill();
+            player.y = p.y - player.height;
+            player.dy = 0;
+            player.grounded = true;
+        }
+    });
+
+    if(player.grounded && keys[" "]){
+        player.dy = -12;
+    }
+
+    spikes.forEach(s=>{
+        if(player.x < s.x+20 &&
+           player.x + player.width > s.x &&
+           player.y + player.height > s.y-20){
+            resetPlayer();
+        }
+    });
+
+    if(player.y > canvas.height){
+        resetPlayer();
+    }
 }
 
-// ==== ANIMATION LOOP ====
-function animate(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  drawSun();
-  drawDunes();
-  drawSand();
-  drawWater();
-  drawCamel(camelX, camelY, legPhase, headPhase);
-
-  // Update Phasen
-  legPhase += 0.1;
-  headPhase += 0.05;
-
-  // Kamel Bewegung
-  camelX += 1;
-  if(camelX > canvas.width + 100) camelX = -100;
-
-  requestAnimationFrame(animate);
+function resetPlayer(){
+    player.x = 100;
+    player.y = 300;
+    player.dy = 0;
 }
 
-animate();
+function gameLoop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawBackground();
+    drawPlatforms();
+    drawSpikes();
+    drawPlayer();
+    update();
+    requestAnimationFrame(gameLoop);
+}
+
+window.addEventListener("keydown", e=> keys[e.key]=true);
+window.addEventListener("keyup", e=> keys[e.key]=false);
+
+gameLoop();
 </script>
+
 </body>
 </html>
